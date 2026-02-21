@@ -54,10 +54,8 @@ export default function ResultCardPrint({ student, allMarks, examType, session }
       if (updateError) throw updateError;
 
       setSchoolLogoUrl(publicUrl);
-      alert('স্কুল লোগো সফলভাবে আপডেট করা হয়েছে!');
     } catch (error: any) {
       console.error('Logo upload error:', error);
-      alert('লোগো আপলোড করতে ব্যর্থ হয়েছে।');
     } finally {
       setLoading(false);
     }

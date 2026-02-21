@@ -267,14 +267,40 @@ export const createMockClient = () => {
           return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => {
-              const dataUrl = e.target?.result as string;
-              try {
-                const key = `mock_storage_${bucket}_${path}`;
-                localStorage.setItem(key, dataUrl);
-              } catch (err) {
-                console.warn('Mock storage quota exceeded', err);
-              }
-              resolve({ data: { path }, error: null });
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 300; // Resize to max 300px to save space and time
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > height) {
+                  if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                  }
+                } else {
+                  if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                  }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL(file.type || 'image/jpeg', 0.8);
+                
+                try {
+                  const key = `mock_storage_${bucket}_${path}`;
+                  localStorage.setItem(key, dataUrl);
+                } catch (err) {
+                  console.warn('Mock storage quota exceeded', err);
+                }
+                resolve({ data: { path }, error: null });
+              };
+              img.src = e.target?.result as string;
             };
             reader.readAsDataURL(file);
           });
