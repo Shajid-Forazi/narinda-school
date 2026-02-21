@@ -264,10 +264,26 @@ export const createMockClient = () => {
     storage: {
       from: (bucket: string) => ({
         upload: async (path: string, file: File) => {
-          return { data: { path }, error: null };
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const dataUrl = e.target?.result as string;
+              try {
+                const key = `mock_storage_${bucket}_${path}`;
+                localStorage.setItem(key, dataUrl);
+              } catch (err) {
+                console.warn('Mock storage quota exceeded', err);
+              }
+              resolve({ data: { path }, error: null });
+            };
+            reader.readAsDataURL(file);
+          });
         },
         getPublicUrl: (path: string) => {
-          return { data: { publicUrl: 'https://picsum.photos/200' } };
+          const key = `mock_storage_${bucket}_${path}`;
+          const storedUrl = localStorage.getItem(key);
+          // Use stored URL or a faster placeholder
+          return { data: { publicUrl: storedUrl || 'https://placehold.co/200x200?text=No+Image' } };
         }
       })
     }
