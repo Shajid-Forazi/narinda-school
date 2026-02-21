@@ -5,6 +5,11 @@ import { Student, Payment, CLASSES, MONTHS } from '../types';
 import { Printer, Loader2 } from 'lucide-react';
 import { toBengaliNumber, formatCurrency } from '../utils';
 
+const BENGALI_MONTHS = [
+  'জানু', 'ফেব', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+  'জুলাই', 'আগস্ট', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'
+];
+
 export default function Ledger() {
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -84,6 +89,14 @@ export default function Ledger() {
     return { studentTotals, monthTotals, grandTotal };
   }, [payments]);
 
+  const studentChunks = useMemo(() => {
+    const chunks = [];
+    for (let i = 0; i < students.length; i += 10) {
+      chunks.push(students.slice(i, i + 10));
+    }
+    return chunks;
+  }, [students]);
+
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#2271b1]" size={32} /></div>;
 
   return (
@@ -117,114 +130,123 @@ export default function Ledger() {
         </button>
       </div>
 
-      <div className="wp-card rounded overflow-x-auto print:overflow-visible print:border-none print:shadow-none">
-        <div className="hidden print:block text-center mb-6">
-          <h1 className="text-2xl font-bold text-red-600">নরিন্দা আইডিয়াল স্কুল এন্ড কলেজ</h1>
-          <p className="text-sm font-bold mt-1">শ্রেণী: {filters.class}, বছর: {toBengaliNumber(filters.year)}</p>
-        </div>
+      <div className="print:w-full">
+        {studentChunks.length === 0 ? (
+          <div className="text-center p-8 text-slate-500">No students found for this class.</div>
+        ) : (
+          studentChunks.map((chunk, cardIndex) => (
+            <div 
+              key={cardIndex} 
+              className="bg-white p-4 mb-8 print:mb-0 print:p-0 print:w-full print:h-screen print:break-after-page shadow-sm border border-slate-200 print:shadow-none print:border-none"
+            >
+              {/* Card Header */}
+              <div className="mb-4 relative border-b-2 border-black pb-2">
+                <h1 className="text-xl font-bold text-center">নরিন্দা আইডিয়াল স্কুল এন্ড কলেজ</h1>
+                <div className="text-center text-xs font-bold mt-1 flex justify-center gap-4">
+                  <span>শ্রেণী: {filters.class}</span>
+                  <span>|</span>
+                  <span>সাল: {toBengaliNumber(filters.year)}</span>
+                </div>
+                <div className="absolute right-0 top-0 border border-black px-2 py-0.5 text-[10px] font-bold">
+                  কার্ড নং: {toBengaliNumber(cardIndex + 1)}
+                </div>
+              </div>
 
-        <table className="w-full border-collapse text-[10px] print:text-[8px] border border-black">
-          <thead>
-            <tr className="bg-[#f6f7f7] print:bg-white text-center">
-              <th rowSpan={2} className="p-1 border border-black w-8">ক্রমিক নং</th>
-              <th rowSpan={2} className="p-1 border border-black w-48">ছাত্রের নাম + পিতার নাম</th>
-              <th rowSpan={2} className="p-1 border border-black w-20">শ্রেণী ও শাখা</th>
-              <th rowSpan={2} className="p-1 border border-black w-32">গ্রামের নাম + ডাকঘর + থানা</th>
-              <th colSpan={12} className="p-1 border border-black font-bold text-lg">বার্ষিক {toBengaliNumber(filters.year)} সালের</th>
-              <th rowSpan={2} className="p-1 border border-black w-16">মোট</th>
-              <th rowSpan={2} className="p-1 border border-black w-12">ID</th>
-              <th rowSpan={2} className="p-1 border border-black w-20">স্বাক্ষর</th>
-            </tr>
-            <tr className="bg-[#f6f7f7] print:bg-white text-center">
-              {MONTHS.map(m => (
-                <th key={m} className="p-1 border border-black min-w-[60px]">
-                  {m.slice(0, 3)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student, idx) => (
-              <tr key={student.id} className="hover:bg-[#f6f7f7] print:hover:bg-transparent">
-                <td className="p-1 text-center border border-black align-middle font-bold">{toBengaliNumber(idx + 1)}</td>
-                <td className="p-1 border border-black align-middle">
-                  <div className="font-bold text-sm">{student.name_bengali}</div>
-                  <div className="text-[9px] mt-1">{student.father_name}</div>
-                </td>
-                <td className="p-1 text-center border border-black align-middle">
-                  <div className="font-bold">{student.class}</div>
-                  <div className="text-[9px]">Sec: {student.section}</div>
-                </td>
-                <td className="p-1 border border-black align-middle text-[9px]">
-                  {student.present_address}
-                </td>
-                {MONTHS.map(month => {
-                  const payment = payments.find(p => p.student_id === student.id && p.month === month && p.year === filters.year);
-                  const isSaving = saving === `${student.id}-${month}`;
-                  
-                  return (
-                    <td key={month} className="p-0 border border-black align-top">
-                      <div className="flex flex-col h-full divide-y divide-black/20">
-                        <LedgerInput 
-                          label="ভর্তি" 
-                          value={payment?.admission_fee} 
-                          onBlur={(val) => handleUpsert(student.id, month, 'admission_fee', val)}
-                          isSaving={isSaving}
-                        />
-                        <LedgerInput 
-                          label="বকেয়া" 
-                          value={payment?.backdue} 
-                          onBlur={(val) => handleUpsert(student.id, month, 'backdue', val)}
-                          isSaving={isSaving}
-                        />
-                        <LedgerInput 
-                          label="বেতন" 
-                          value={payment?.salary} 
-                          onBlur={(val) => handleUpsert(student.id, month, 'salary', val)}
-                          isSaving={isSaving}
-                        />
-                        <LedgerInput 
-                          label="পরীক্ষা" 
-                          value={payment?.exam_fee} 
-                          onBlur={(val) => handleUpsert(student.id, month, 'exam_fee', val)}
-                          isSaving={isSaving}
-                        />
-                      </div>
-                    </td>
-                  );
-                })}
-                <td className="p-1 text-center font-bold border border-black align-middle">
-                  {toBengaliNumber(totals.studentTotals[student.id] || 0)}
-                </td>
-                <td className="p-1 text-center border border-black align-middle text-[9px]">
-                  {toBengaliNumber(student.sl_no)}
-                </td>
-                <td className="p-1 border border-black"></td>
-              </tr>
-            ))}
-            <tr className="bg-[#f0f0f1] font-bold print:bg-white">
-              <td colSpan={4} className="p-2 text-right border border-black">সর্বমোট (Grand Total)</td>
-              {MONTHS.map(m => (
-                <td key={m} className="p-1 text-center border border-black text-[9px]">
-                  {toBengaliNumber(totals.monthTotals[m] || 0)}
-                </td>
-              ))}
-              <td className="p-1 text-center border border-black">
-                {toBengaliNumber(totals.grandTotal)}
-              </td>
-              <td colSpan={2} className="border border-black"></td>
-            </tr>
-          </tbody>
-        </table>
+              {/* Table */}
+              <table className="w-full border-collapse border border-black text-[9px]">
+                <thead>
+                  <tr className="bg-slate-50 print:bg-white text-center">
+                    <th rowSpan={2} className="border border-black w-8 p-1">ক্রমিক নং</th>
+                    <th rowSpan={2} className="border border-black w-32 p-1">ছাত্রের নাম ও পিতার নাম</th>
+                    <th rowSpan={2} className="border border-black w-16 p-1">শ্রেণী ও শাখা</th>
+                    <th rowSpan={2} className="border border-black w-24 p-1">গ্রাম/এলাকা + ডাকঘর + থানা</th>
+                    {BENGALI_MONTHS.map((m, i) => (
+                      <th key={i} className="border border-black min-w-[50px] p-0.5">{m}</th>
+                    ))}
+                    <th rowSpan={2} className="border border-black w-12 p-1">মোট</th>
+                    <th rowSpan={2} className="border border-black w-10 p-1">ID</th>
+                    <th rowSpan={2} className="border border-black w-12 p-1">স্বাক্ষর</th>
+                  </tr>
+                  <tr className="bg-slate-50 print:bg-white h-0">
+                    {/* Empty row to satisfy rowSpan structure if needed, but headers are already set */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {chunk.map((student, idx) => (
+                    <tr key={student.id} className="print:break-inside-avoid">
+                      <td className="border border-black text-center font-bold align-middle">
+                        {toBengaliNumber((cardIndex * 10) + idx + 1)}
+                      </td>
+                      <td className="border border-black p-1 align-middle">
+                        <div className="font-bold text-[10px]">{student.name_bengali}</div>
+                        <div className="text-[8px] mt-0.5">{student.father_name}</div>
+                      </td>
+                      <td className="border border-black text-center align-middle">
+                        <div>{student.class}</div>
+                        <div>{student.section}</div>
+                      </td>
+                      <td className="border border-black p-1 align-middle text-[8px] leading-tight">
+                        {student.present_address}
+                      </td>
+                      {MONTHS.map(month => {
+                        const payment = payments.find(p => p.student_id === student.id && p.month === month && p.year === filters.year);
+                        const isSaving = saving === `${student.id}-${month}`;
+                        
+                        return (
+                          <td key={month} className="border border-black p-0 align-top">
+                            <div className="flex flex-col divide-y divide-black/30">
+                              <LedgerInput 
+                                label="ভর্তি" 
+                                value={payment?.admission_fee} 
+                                onBlur={(val) => handleUpsert(student.id, month, 'admission_fee', val)}
+                                isSaving={isSaving}
+                              />
+                              <LedgerInput 
+                                label="বকেয়া" 
+                                value={payment?.backdue} 
+                                onBlur={(val) => handleUpsert(student.id, month, 'backdue', val)}
+                                isSaving={isSaving}
+                              />
+                              <LedgerInput 
+                                label="বেতন" 
+                                value={payment?.salary} 
+                                onBlur={(val) => handleUpsert(student.id, month, 'salary', val)}
+                                isSaving={isSaving}
+                              />
+                              <LedgerInput 
+                                label="পরীক্ষা" 
+                                value={payment?.exam_fee} 
+                                onBlur={(val) => handleUpsert(student.id, month, 'exam_fee', val)}
+                                isSaving={isSaving}
+                              />
+                            </div>
+                          </td>
+                        );
+                      })}
+                      <td className="border border-black text-center font-bold align-middle">
+                        {toBengaliNumber(totals.studentTotals[student.id] || 0)}
+                      </td>
+                      <td className="border border-black text-center align-middle text-[8px]">
+                        {student.sl_no}
+                      </td>
+                      <td className="border border-black"></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-        <div className="hidden print:flex justify-between mt-16 px-12">
-          <div className="text-center">
-            <div className="border-t border-black pt-1 w-40 font-bold">হিসাবরক্ষক</div>
-          </div>
-          <div className="text-center">
-            <div className="border-t border-black pt-1 w-40 font-bold">প্রধান শিক্ষক</div>
-          </div>
-        </div>
+              {/* Footer */}
+              <div className="flex justify-between mt-8 px-8 print:mt-12">
+                <div className="text-center">
+                  <div className="border-t border-black pt-1 w-32 font-bold text-[10px]">হিসাবরক্ষক</div>
+                </div>
+                <div className="text-center">
+                  <div className="border-t border-black pt-1 w-32 font-bold text-[10px]">প্রধান শিক্ষক</div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -238,23 +260,18 @@ function LedgerInput({ label, value, onBlur, isSaving }: { label: string, value?
   }, [value]);
 
   return (
-    <div className="flex items-center justify-between px-1 py-0.5 h-6 hover:bg-slate-50">
-      <span className="text-[7px] font-bold text-slate-500 w-8 shrink-0 print:text-black">{label}</span>
-      <div className="flex-1 text-right">
-        <input 
-          type="number"
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={() => onBlur(localValue)}
-          className={clsx(
-            "w-full text-right bg-transparent border-none p-0 text-[9px] outline-none focus:ring-0 print:hidden",
-            isSaving && "opacity-50"
-          )}
-        />
-        <span className="hidden print:block text-[9px] font-medium">
-          {value ? toBengaliNumber(value) : ''}
-        </span>
-      </div>
+    <div className="flex items-center px-0.5 h-[14px]">
+      <span className="text-[6px] font-bold w-6 shrink-0 leading-none">{label}</span>
+      <input 
+        type="number"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={() => onBlur(localValue)}
+        className={clsx(
+          "w-full bg-transparent border-none p-0 text-[8px] text-right outline-none focus:ring-0 leading-none h-full",
+          isSaving && "opacity-50"
+        )}
+      />
     </div>
   );
 }
