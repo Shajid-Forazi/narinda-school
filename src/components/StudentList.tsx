@@ -275,7 +275,10 @@ export default function StudentList({ onEdit }: Props) {
                 <ProfileItem label="বর্তমান ফোন (Present Phone)" value={toBengaliNumber(selectedStudent.present_phone)} />
                 <ProfileItem label="স্থায়ী ফোন (Permanent Phone)" value={toBengaliNumber(selectedStudent.permanent_phone)} />
                 <ProfileItem label="শিফট (Shift)" value={selectedStudent.shift} />
-                <ProfileItem label="সেশন (Session)" value={toBengaliNumber(selectedStudent.session)} />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">সেশন (Session)</p>
+                  <p className="text-sm font-medium text-[#1d2327]">{toBengaliNumber(selectedStudent.session)}</p>
+                </div>
                 <div className="md:col-span-2">
                   <ProfileItem label="বর্তমান ঠিকানা (Present Address)" value={selectedStudent.present_address} />
                 </div>

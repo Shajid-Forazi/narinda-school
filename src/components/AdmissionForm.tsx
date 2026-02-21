@@ -38,6 +38,12 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [schoolLogoUrl, setSchoolLogoUrl] = useState<string>('');
   const formRef = useRef<HTMLDivElement>(null);
+  const currentYear = new Date().getFullYear();
+  const sessionOptions = [
+    (currentYear - 1).toString(),
+    currentYear.toString(),
+    (currentYear + 1).toString()
+  ];
 
   useEffect(() => {
     fetchSettings();
@@ -441,24 +447,27 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold">Section:</span>
-              <select 
+              <input 
+                list="sections"
                 value={formData.section}
                 onChange={(e) => setFormData({...formData, section: e.target.value})}
-                className="border-b border-black bg-transparent outline-none px-2"
-              >
-                {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+                className="border-b border-black bg-transparent outline-none px-2 w-24"
+              />
+              <datalist id="sections">
+                {SECTIONS.map(s => <option key={s} value={s} />)}
+              </datalist>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold">Shift:</span>
-              <select 
-                value={formData.shift}
-                onChange={(e) => setFormData({...formData, shift: e.target.value})}
-                className="border-b border-black bg-transparent outline-none px-2"
-              >
-                <option value="Day">Day</option>
-                <option value="Morning">Morning</option>
-              </select>
+              <span className="font-bold">Session:</span>
+              <input 
+                list="sessions"
+                value={formData.session}
+                onChange={(e) => setFormData({...formData, session: e.target.value})}
+                className="border-b border-black bg-transparent outline-none px-2 w-24"
+              />
+              <datalist id="sessions">
+                {sessionOptions.map(s => <option key={s} value={s} />)}
+              </datalist>
             </div>
           </div>
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   CreditCard, 
@@ -12,17 +12,20 @@ import {
   Menu,
   X,
   ChevronLeft,
+  LogOut,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Student } from './types';
+import { supabase } from './lib/supabase';
 
 // Components
 import AdmissionForm from './components/AdmissionForm';
 import StudentList from './components/StudentList';
 import Ledger from './components/Ledger';
 import ResultProcessing from './components/ResultProcessing';
+import Login from './components/Login';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,9 +34,26 @@ function cn(...inputs: ClassValue[]) {
 type View = 'admission' | 'students' | 'ledger' | 'results';
 
 export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('admission');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { id: 'admission', label: 'Admission', icon: UserPlus },
@@ -52,6 +72,10 @@ export default function App() {
       setEditingStudent(null);
     }
     setCurrentView(view);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   const renderView = () => {
@@ -76,6 +100,18 @@ export default function App() {
         return <AdmissionForm onComplete={() => setCurrentView('students')} />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex font-sans text-[#1a1a1a]">
@@ -139,6 +175,19 @@ export default function App() {
             </button>
           ))}
         </nav>
+
+        <div className="p-2 border-t border-slate-100">
+          <button 
+            onClick={handleLogout}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all text-slate-500 hover:bg-red-50 hover:text-red-600",
+              !isSidebarOpen && "justify-center"
+            )}
+          >
+            <LogOut size={18} className="shrink-0" />
+            {isSidebarOpen && <span>Logout</span>}
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
