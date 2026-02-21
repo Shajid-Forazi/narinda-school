@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Sans Bengali", ui-sans-serif, system-ui, sans-serif;
+  --color-wp-sidebar: #1d2327;
+  --color-wp-sidebar-text: #f0f0f1;
+  --color-wp-sidebar-hover: #1e40af;
+  --color-wp-bg: #f0f0f1;
+  --color-primary: #1e40af;
+}
+
+@layer base {
+  body {
+    @apply bg-wp-bg text-[#1d2327];
+  }
+
+  @media print {
+    .print\:hidden {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .page-break-before {
+      page-break-before: always;
+    }
+    .page-break-after-always {
+      page-break-after: always;
+    }
+  }
+}
+
+.wp-card {
+  @apply bg-white border border-[#c3c4c7] shadow-sm;
+}
+
+.wp-button {
+  @apply bg-[#1e40af] hover:bg-[#1e3a8a] text-white px-4 py-2 rounded font-medium transition-colors;
+}
+
+.wp-input {
+  @apply border border-[#8c8f94] rounded px-3 py-2 focus:border-[#1e40af] focus:ring-1 focus:ring-[#1e40af] outline-none transition-all;
+}
