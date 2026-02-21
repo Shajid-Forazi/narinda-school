@@ -55,16 +55,25 @@ create table result_cards (
   unique(student_id, session, exam_type, subject)
 );
 
+-- Settings table for school info
+create table settings (
+  id text primary key default 'school_settings',
+  school_logo_url text,
+  updated_at timestamp default now()
+);
+
 -- Enable RLS on all tables
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE result_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- Create "Allow All" policies for development
 -- (In a production app, you would restrict this to authenticated users)
 CREATE POLICY "Allow all for students" ON students FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for payments" ON payments FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for result_cards" ON result_cards FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for settings" ON settings FOR ALL USING (true) WITH CHECK (true);
 
 -- Storage Policies for 'student-photos' bucket
 -- 1. Allow public to view photos

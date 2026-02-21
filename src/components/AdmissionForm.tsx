@@ -36,7 +36,12 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [formData, setFormData] = useState(INITIAL_STATE);
+  const [schoolLogoUrl, setSchoolLogoUrl] = useState<string>('');
   const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (studentToEdit) {
@@ -66,6 +71,49 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
       });
     }
   }, [studentToEdit]);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase
+      .from('settings')
+      .select('school_logo_url')
+      .eq('id', 'school_settings')
+      .single();
+    if (data) setSchoolLogoUrl(data.school_logo_url);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `school-logo-${Math.random()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('student-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('student-photos')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('settings')
+        .upsert({ id: 'school_settings', school_logo_url: publicUrl, updated_at: new Date().toISOString() });
+
+      if (updateError) throw updateError;
+
+      setSchoolLogoUrl(publicUrl);
+      alert('স্কুল লোগো সফলভাবে আপডেট করা হয়েছে!');
+    } catch (error: any) {
+      console.error('Logo upload error:', error);
+      alert('লোগো আপলোড করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleReset = () => {
     setFormData(INITIAL_STATE);
@@ -157,8 +205,21 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
       >
         {/* Header */}
         <div className="flex justify-between items-start mb-6 border-b-2 border-red-600 pb-4">
-          <div className="w-20 h-20 bg-slate-100 border border-slate-300 flex items-center justify-center text-[10px] text-slate-400">
-            LOGO
+          <div className="w-20 h-20 bg-slate-100 border border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer">
+            {schoolLogoUrl ? (
+              <img src={schoolLogoUrl} alt="School Logo" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-[10px] text-slate-400">LOGO</span>
+            )}
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+              <Upload size={16} className="text-white" />
+            </div>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleLogoUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer print:hidden"
+            />
           </div>
           <div className="flex-1 text-center px-4">
             <h1 className="text-3xl font-black text-red-600 mb-2 leading-none">NARINDA IDEAL SCHOOL & COLLEGE</h1>
