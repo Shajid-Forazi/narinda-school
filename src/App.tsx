@@ -48,7 +48,10 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Handle password recovery event if needed, usually session is set
+      }
       setSession(session);
     });
 
