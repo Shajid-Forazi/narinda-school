@@ -1,6 +1,6 @@
 {
-  "name": "Narinda Ideal School Management System",
-  "description": "A comprehensive school management system for Narinda Ideal School, featuring student admissions, monthly fee ledgers, and academic result processing with Bengali localization.",
+  "name": "Narinda Ideal School",
+  "description": "Minimalist management system for student admissions, ledgers, and results.",
   "requestFramePermissions": [
     "camera"
   ]

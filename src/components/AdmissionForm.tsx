@@ -3,6 +3,27 @@ import { supabase } from '../lib/supabase';
 import { CLASSES, SECTIONS, SESSIONS, Student } from '../types';
 import { Upload, Save, Loader2, RotateCcw, Printer } from 'lucide-react';
 
+// UI Components
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/src/components/ui/card";
+import { Separator } from "@/src/components/ui/separator";
+
+import { toast } from "sonner";
+
 interface Props {
   onComplete: () => void;
   studentToEdit?: Student | null;
@@ -106,10 +127,10 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
       if (updateError) throw updateError;
 
       setSchoolLogoUrl(publicUrl);
-      alert('স্কুল লোগো সফলভাবে আপডেট করা হয়েছে!');
+      toast.success('স্কুল লোগো সফলভাবে আপডেট করা হয়েছে!');
     } catch (error: any) {
       console.error('Logo upload error:', error);
-      alert('লোগো আপলোড করতে ব্যর্থ হয়েছে।');
+      toast.error('লোগো আপলোড করতে ব্যর্থ হয়েছে।');
     } finally {
       setLoading(false);
     }
@@ -177,20 +198,20 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
           .update(submissionData)
           .eq('id', studentToEdit.id);
         if (error) throw error;
-        alert('শিক্ষার্থীর তথ্য সফলভাবে আপডেট করা হয়েছে!');
+        toast.success('শিক্ষার্থীর তথ্য সফলভাবে আপডেট করা হয়েছে!');
       } else {
         const { error } = await supabase
           .from('students')
           .insert([submissionData]);
         if (error) throw error;
-        alert('শিক্ষার্থী সফলভাবে ভর্তি করা হয়েছে!');
+        toast.success('শিক্ষার্থী সফলভাবে ভর্তি করা হয়েছে!');
       }
       
       onComplete();
       if (!studentToEdit) handleReset();
     } catch (error: any) {
       console.error('Error:', error);
-      alert(error.message || 'তথ্য সংরক্ষণ করতে ব্যর্থ হয়েছে।');
+      toast.error(error.message || 'তথ্য সংরক্ষণ করতে ব্যর্থ হয়েছে।');
     } finally {
       setLoading(false);
     }
@@ -518,26 +539,28 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
 
       {/* Buttons */}
       <div className="flex gap-4 print:hidden mb-12">
-        <button 
+        <Button 
+          variant="outline"
           onClick={handleReset}
-          className="wp-button bg-white text-slate-700 border border-[#c3c4c7] hover:bg-slate-50 flex items-center gap-2"
+          className="flex items-center gap-2"
         >
           <RotateCcw size={18} /> Reset
-        </button>
-        <button 
+        </Button>
+        <Button 
+          variant="secondary"
           onClick={handlePrint}
-          className="wp-button bg-green-600 hover:bg-green-700 flex items-center gap-2"
+          className="flex items-center gap-2"
         >
           <Printer size={18} /> Print Form
-        </button>
-        <button 
+        </Button>
+        <Button 
           disabled={loading}
           onClick={handleSubmit}
-          className="wp-button flex items-center gap-2"
+          className="flex items-center gap-2"
         >
           {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
           {loading ? 'Saving...' : studentToEdit ? 'Update Student' : 'Save Student'}
-        </button>
+        </Button>
       </div>
     </div>
   );

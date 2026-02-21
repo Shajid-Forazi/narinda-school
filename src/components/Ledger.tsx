@@ -224,10 +224,13 @@ function LedgerInput({ label, value, onBlur, isSaving }: { label: string, value?
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={() => onBlur(localValue)}
         className={clsx(
-          "w-full px-0.5 py-0 bg-white border border-[#c3c4c7] rounded text-[8px] outline-none focus:border-[#2271b1] transition-all print:border-none print:p-0 print:text-center",
+          "w-full px-0.5 py-0 bg-white border border-[#c3c4c7] rounded text-[8px] outline-none focus:border-[#2271b1] transition-all print:hidden",
           isSaving && "opacity-50"
         )}
       />
+      <span className="hidden print:block text-[8px] font-medium text-right w-full">
+        {value ? toBengaliNumber(value) : '-'}
+      </span>
     </div>
   );
 }

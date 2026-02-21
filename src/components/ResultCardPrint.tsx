@@ -203,49 +203,49 @@ export default function ResultCardPrint({ student, allMarks, examType, session }
       </div>
 
       {/* INNER MARK SHEET */}
-      <div className="min-h-[1123px] w-[1123px] mx-auto p-4 flex flex-col">
+      <div className="min-h-[1123px] w-[794px] mx-auto p-4 flex flex-col page-break-before">
         <div className="flex justify-between items-center mb-2 px-4">
           <div className="flex items-center gap-2">
             {schoolLogoUrl && <img src={schoolLogoUrl} alt="Logo" className="w-8 h-8" />}
-            <h2 className="text-2xl font-bold text-blue-900 uppercase">Narinda Ideal School</h2>
+            <h2 className="text-xl font-bold text-blue-900 uppercase">Narinda Ideal School</h2>
           </div>
           <div className="flex items-center gap-2">
             {schoolLogoUrl && <img src={schoolLogoUrl} alt="Logo" className="w-8 h-8" />}
-            <h2 className="text-2xl font-bold text-blue-900 uppercase">Narinda Ideal School</h2>
+            <h2 className="text-xl font-bold text-blue-900 uppercase">Narinda Ideal School</h2>
           </div>
         </div>
 
-        <div className="flex gap-4 flex-1">
+        <div className="flex gap-2 flex-1">
           {/* Main Table Section */}
           <div className="flex-[3] flex flex-col">
-            <table className="w-full border-collapse border-2 border-black text-[10px]">
+            <table className="w-full border-collapse border border-black text-[8px]">
               <thead>
                 <tr>
-                  <th rowSpan={2} className="border border-black p-1 w-24">Subject</th>
-                  <th rowSpan={2} className="border border-black p-1 w-10">Total Marks</th>
-                  <th colSpan={5} className="border border-black p-1">First terminal examination-{session}</th>
-                  <th colSpan={5} className="border border-black p-1">Second terminal examination</th>
-                  <th colSpan={5} className="border border-black p-1">Annual examination</th>
+                  <th rowSpan={2} className="border border-black p-0.5 w-16">Subject</th>
+                  <th rowSpan={2} className="border border-black p-0.5 w-8">Total</th>
+                  <th colSpan={5} className="border border-black p-0.5">First terminal examination-{session}</th>
+                  <th colSpan={5} className="border border-black p-0.5">Second terminal examination</th>
+                  <th colSpan={5} className="border border-black p-0.5">Annual examination</th>
                 </tr>
                 <tr>
                   {/* Exam 1 */}
-                  <th className="border border-black p-0.5 w-8">Tutorial Test</th>
-                  <th className="border border-black p-0.5 w-8">Terminal Sub. Obj.</th>
-                  <th className="border border-black p-0.5 w-10">Obtained Total Marks</th>
-                  <th className="border border-black p-0.5 w-8">Grade</th>
-                  <th className="border border-black p-0.5 w-8">Grade Point</th>
+                  <th className="border border-black p-0.5 w-6">Tut.</th>
+                  <th className="border border-black p-0.5 w-6">Sub/Obj</th>
+                  <th className="border border-black p-0.5 w-8">Total</th>
+                  <th className="border border-black p-0.5 w-6">G</th>
+                  <th className="border border-black p-0.5 w-6">GP</th>
                   {/* Exam 2 */}
-                  <th className="border border-black p-0.5 w-8">Tutorial Test</th>
-                  <th className="border border-black p-0.5 w-8">Terminal Sub. Obj.</th>
-                  <th className="border border-black p-0.5 w-10">Obtained Total Marks</th>
-                  <th className="border border-black p-0.5 w-8">Grade</th>
-                  <th className="border border-black p-0.5 w-8">Grade Point</th>
+                  <th className="border border-black p-0.5 w-6">Tut.</th>
+                  <th className="border border-black p-0.5 w-6">Sub/Obj</th>
+                  <th className="border border-black p-0.5 w-8">Total</th>
+                  <th className="border border-black p-0.5 w-6">G</th>
+                  <th className="border border-black p-0.5 w-6">GP</th>
                   {/* Exam 3 */}
-                  <th className="border border-black p-0.5 w-8">Tutorial Test</th>
-                  <th className="border border-black p-0.5 w-8">Terminal Sub. Obj.</th>
-                  <th className="border border-black p-0.5 w-10">Obtained Total Marks</th>
-                  <th className="border border-black p-0.5 w-8">Grade</th>
-                  <th className="border border-black p-0.5 w-8">Grade Point</th>
+                  <th className="border border-black p-0.5 w-6">Tut.</th>
+                  <th className="border border-black p-0.5 w-6">Sub/Obj</th>
+                  <th className="border border-black p-0.5 w-8">Total</th>
+                  <th className="border border-black p-0.5 w-6">G</th>
+                  <th className="border border-black p-0.5 w-6">GP</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,26 +256,26 @@ export default function ResultCardPrint({ student, allMarks, examType, session }
                   
                   return (
                     <tr key={s.name}>
-                      <td className="border border-black p-1 font-bold">{s.name}</td>
-                      <td className="border border-black p-1 text-center">{s.total}</td>
+                      <td className="border border-black p-0.5 font-bold truncate max-w-[80px]">{s.name}</td>
+                      <td className="border border-black p-0.5 text-center">{s.total}</td>
                       {/* Exam 1 Data */}
-                      <td className="border border-black p-1 text-center">{toBengaliNumber(m1?.tutorial_marks || '')}</td>
-                      <td className="border border-black p-1 text-center">{toBengaliNumber((m1?.sub_marks || 0) + (m1?.obj_marks || 0) || '')}</td>
-                      <td className="border border-black p-1 text-center font-bold">{toBengaliNumber(m1?.total_marks || '')}</td>
-                      <td className="border border-black p-1 text-center font-bold">{m1?.grade || ''}</td>
-                      <td className="border border-black p-1 text-center">{toBengaliNumber(m1?.grade_point?.toFixed(2) || '')}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(m1?.tutorial_marks || '')}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber((m1?.sub_marks || 0) + (m1?.obj_marks || 0) || '')}</td>
+                      <td className="border border-black p-0.5 text-center font-bold">{toBengaliNumber(m1?.total_marks || '')}</td>
+                      <td className="border border-black p-0.5 text-center font-bold">{m1?.grade || ''}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(m1?.grade_point?.toFixed(2) || '')}</td>
                       {/* Exam 2 Data */}
-                      <td className="border border-black p-1 text-center">{toBengaliNumber(m2?.tutorial_marks || '')}</td>
-                      <td className="border border-black p-1 text-center">{toBengaliNumber((m2?.sub_marks || 0) + (m2?.obj_marks || 0) || '')}</td>
-                      <td className="border border-black p-1 text-center font-bold">{toBengaliNumber(m2?.total_marks || '')}</td>
-                      <td className="border border-black p-1 text-center font-bold">{m2?.grade || ''}</td>
-                      <td className="border border-black p-1 text-center">{toBengaliNumber(m2?.grade_point?.toFixed(2) || '')}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(m2?.tutorial_marks || '')}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber((m2?.sub_marks || 0) + (m2?.obj_marks || 0) || '')}</td>
+                      <td className="border border-black p-0.5 text-center font-bold">{toBengaliNumber(m2?.total_marks || '')}</td>
+                      <td className="border border-black p-0.5 text-center font-bold">{m2?.grade || ''}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(m2?.grade_point?.toFixed(2) || '')}</td>
                       {/* Exam 3 Data */}
-                      <td className="border border-black p-1 text-center">{toBengaliNumber(m3?.tutorial_marks || '')}</td>
-                      <td className="border border-black p-1 text-center">{toBengaliNumber((m3?.sub_marks || 0) + (m3?.obj_marks || 0) || '')}</td>
-                      <td className="border border-black p-1 text-center font-bold">{toBengaliNumber(m3?.total_marks || '')}</td>
-                      <td className="border border-black p-1 text-center font-bold">{m3?.grade || ''}</td>
-                      <td className="border border-black p-1 text-center">{toBengaliNumber(m3?.grade_point?.toFixed(2) || '')}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(m3?.tutorial_marks || '')}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber((m3?.sub_marks || 0) + (m3?.obj_marks || 0) || '')}</td>
+                      <td className="border border-black p-0.5 text-center font-bold">{toBengaliNumber(m3?.total_marks || '')}</td>
+                      <td className="border border-black p-0.5 text-center font-bold">{m3?.grade || ''}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(m3?.grade_point?.toFixed(2) || '')}</td>
                     </tr>
                   );
                 })}
