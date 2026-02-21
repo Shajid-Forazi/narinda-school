@@ -192,7 +192,7 @@ export const createMockClient = () => {
       return this;
     }
 
-    async update(updates: any) {
+    update(updates: any) {
       // For update, we need to defer execution until filters are applied
       // But in this simple mock, we can't easily do that if we return `this` directly
       // because `then` will be called later.
