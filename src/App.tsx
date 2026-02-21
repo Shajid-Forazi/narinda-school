@@ -144,21 +144,29 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
+    // Check URL hash for invite or recovery tokens on initial load
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const type = params.get('type');
+    
+    if (type === 'invite' || type === 'recovery') {
+      setIsPasswordRecovery(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' && window.location.hash.includes('type=invite')) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
         setIsPasswordRecovery(true);
       }
       if (event === 'USER_UPDATED') {
         setIsPasswordRecovery(false);
       }
       setSession(session);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -218,8 +226,11 @@ export default function App() {
     );
   }
 
-  if (isPasswordRecovery || (session && window.location.hash.includes('type=recovery'))) {
-    return <SetNewPassword onComplete={() => setIsPasswordRecovery(false)} />;
+  if (isPasswordRecovery) {
+    return <SetNewPassword onComplete={() => {
+      setIsPasswordRecovery(false);
+      window.location.hash = '';
+    }} />;
   }
 
   if (!session) {
