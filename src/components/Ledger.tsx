@@ -119,39 +119,52 @@ export default function Ledger() {
 
       <div className="wp-card rounded overflow-x-auto print:overflow-visible print:border-none print:shadow-none">
         <div className="hidden print:block text-center mb-6">
-          <h1 className="text-2xl font-bold">নরিন্দা আইডিয়াল স্কুল এন্ড কলেজ</h1>
-          <p className="text-lg">মাসিক বেতন লেজার - {toBengaliNumber(filters.year)}</p>
-          <p className="text-sm">শ্রেণী: {filters.class}</p>
+          <h1 className="text-2xl font-bold text-red-600">নরিন্দা আইডিয়াল স্কুল এন্ড কলেজ</h1>
+          <p className="text-sm font-bold mt-1">শ্রেণী: {filters.class}, বছর: {toBengaliNumber(filters.year)}</p>
         </div>
 
-        <table className="w-full border-collapse text-[10px] print:text-[8px]">
+        <table className="w-full border-collapse text-[10px] print:text-[8px] border border-black">
           <thead>
-            <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7] print:bg-white">
-              <th className="p-2 text-left font-bold sticky left-0 bg-[#f6f7f7] z-10 border-r border-[#c3c4c7] w-8 print:bg-white">SL</th>
-              <th className="p-2 text-left font-bold sticky left-8 bg-[#f6f7f7] z-10 border-r border-[#c3c4c7] w-32 print:bg-white print:left-0">Student Name</th>
+            <tr className="bg-[#f6f7f7] print:bg-white text-center">
+              <th rowSpan={2} className="p-1 border border-black w-8">ক্রমিক নং</th>
+              <th rowSpan={2} className="p-1 border border-black w-48">ছাত্রের নাম + পিতার নাম</th>
+              <th rowSpan={2} className="p-1 border border-black w-20">শ্রেণী ও শাখা</th>
+              <th rowSpan={2} className="p-1 border border-black w-32">গ্রামের নাম + ডাকঘর + থানা</th>
+              <th colSpan={12} className="p-1 border border-black font-bold text-lg">বার্ষিক {toBengaliNumber(filters.year)} সালের</th>
+              <th rowSpan={2} className="p-1 border border-black w-16">মোট</th>
+              <th rowSpan={2} className="p-1 border border-black w-12">ID</th>
+              <th rowSpan={2} className="p-1 border border-black w-20">স্বাক্ষর</th>
+            </tr>
+            <tr className="bg-[#f6f7f7] print:bg-white text-center">
               {MONTHS.map(m => (
-                <th key={m} className="p-1 text-center font-bold border-r border-[#c3c4c7] min-w-[80px]">
+                <th key={m} className="p-1 border border-black min-w-[60px]">
                   {m.slice(0, 3)}
                 </th>
               ))}
-              <th className="p-2 text-center font-bold bg-[#f0f0f1] w-20 print:bg-white">Total</th>
             </tr>
           </thead>
           <tbody>
             {students.map((student, idx) => (
-              <tr key={student.id} className="border-b border-[#c3c4c7] hover:bg-[#f6f7f7] print:hover:bg-transparent">
-                <td className="p-2 text-center sticky left-0 bg-white z-10 border-r border-[#c3c4c7]">{toBengaliNumber(idx + 1)}</td>
-                <td className="p-2 font-medium sticky left-8 bg-white z-10 border-r border-[#c3c4c7] print:left-0">
-                  <div className="font-bold truncate">{student.name_bengali}</div>
-                  <div className="text-[8px] text-slate-500">SL.NO: {toBengaliNumber(student.sl_no)}</div>
+              <tr key={student.id} className="hover:bg-[#f6f7f7] print:hover:bg-transparent">
+                <td className="p-1 text-center border border-black align-middle font-bold">{toBengaliNumber(idx + 1)}</td>
+                <td className="p-1 border border-black align-middle">
+                  <div className="font-bold text-sm">{student.name_bengali}</div>
+                  <div className="text-[9px] mt-1">{student.father_name}</div>
+                </td>
+                <td className="p-1 text-center border border-black align-middle">
+                  <div className="font-bold">{student.class}</div>
+                  <div className="text-[9px]">Sec: {student.section}</div>
+                </td>
+                <td className="p-1 border border-black align-middle text-[9px]">
+                  {student.present_address}
                 </td>
                 {MONTHS.map(month => {
                   const payment = payments.find(p => p.student_id === student.id && p.month === month && p.year === filters.year);
                   const isSaving = saving === `${student.id}-${month}`;
                   
                   return (
-                    <td key={month} className="p-0.5 border-r border-[#c3c4c7]">
-                      <div className="space-y-0.5">
+                    <td key={month} className="p-0 border border-black align-top">
+                      <div className="flex flex-col h-full divide-y divide-black/20">
                         <LedgerInput 
                           label="ভর্তি" 
                           value={payment?.admission_fee} 
@@ -180,28 +193,37 @@ export default function Ledger() {
                     </td>
                   );
                 })}
-                <td className="p-2 text-center font-bold bg-[#f0f0f1] print:bg-white">
-                  {formatCurrency(totals.studentTotals[student.id] || 0)}
+                <td className="p-1 text-center font-bold border border-black align-middle">
+                  {toBengaliNumber(totals.studentTotals[student.id] || 0)}
                 </td>
+                <td className="p-1 text-center border border-black align-middle text-[9px]">
+                  {toBengaliNumber(student.sl_no)}
+                </td>
+                <td className="p-1 border border-black"></td>
               </tr>
             ))}
-            <tr className="bg-[#1d2327] text-white font-bold print:text-black print:bg-white print:border-t-2 print:border-black">
-              <td colSpan={2} className="p-2 text-right border-r border-[#2c3338] print:border-black">Grand Totals</td>
+            <tr className="bg-[#f0f0f1] font-bold print:bg-white">
+              <td colSpan={4} className="p-2 text-right border border-black">সর্বমোট (Grand Total)</td>
               {MONTHS.map(m => (
-                <td key={m} className="p-2 text-center border-r border-[#2c3338] print:border-black">
-                  {formatCurrency(totals.monthTotals[m] || 0)}
+                <td key={m} className="p-1 text-center border border-black text-[9px]">
+                  {toBengaliNumber(totals.monthTotals[m] || 0)}
                 </td>
               ))}
-              <td className="p-2 text-center bg-[#2271b1] print:bg-white">
-                {formatCurrency(totals.grandTotal)}
+              <td className="p-1 text-center border border-black">
+                {toBengaliNumber(totals.grandTotal)}
               </td>
+              <td colSpan={2} className="border border-black"></td>
             </tr>
           </tbody>
         </table>
 
-        <div className="hidden print:flex justify-between mt-12 px-12">
-          <div className="text-center border-t border-black pt-2 w-40">হিসাবরক্ষক</div>
-          <div className="text-center border-t border-black pt-2 w-40">প্রধান শিক্ষক</div>
+        <div className="hidden print:flex justify-between mt-16 px-12">
+          <div className="text-center">
+            <div className="border-t border-black pt-1 w-40 font-bold">হিসাবরক্ষক</div>
+          </div>
+          <div className="text-center">
+            <div className="border-t border-black pt-1 w-40 font-bold">প্রধান শিক্ষক</div>
+          </div>
         </div>
       </div>
     </div>
@@ -216,21 +238,23 @@ function LedgerInput({ label, value, onBlur, isSaving }: { label: string, value?
   }, [value]);
 
   return (
-    <div className="flex items-center gap-0.5">
-      <span className="text-[7px] font-bold text-slate-400 w-6 shrink-0 print:text-black">{label}</span>
-      <input 
-        type="number"
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={() => onBlur(localValue)}
-        className={clsx(
-          "w-full px-0.5 py-0 bg-white border border-[#c3c4c7] rounded text-[8px] outline-none focus:border-[#2271b1] transition-all print:hidden",
-          isSaving && "opacity-50"
-        )}
-      />
-      <span className="hidden print:block text-[8px] font-medium text-right w-full">
-        {value ? toBengaliNumber(value) : '-'}
-      </span>
+    <div className="flex items-center justify-between px-1 py-0.5 h-6 hover:bg-slate-50">
+      <span className="text-[7px] font-bold text-slate-500 w-8 shrink-0 print:text-black">{label}</span>
+      <div className="flex-1 text-right">
+        <input 
+          type="number"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={() => onBlur(localValue)}
+          className={clsx(
+            "w-full text-right bg-transparent border-none p-0 text-[9px] outline-none focus:ring-0 print:hidden",
+            isSaving && "opacity-50"
+          )}
+        />
+        <span className="hidden print:block text-[9px] font-medium">
+          {value ? toBengaliNumber(value) : ''}
+        </span>
+      </div>
     </div>
   );
 }
