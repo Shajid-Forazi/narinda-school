@@ -154,9 +154,11 @@ export const createMockClient = () => {
       return this;
     }
 
-    async upsert(rows: any[], { onConflict }: { onConflict?: string } = {}) {
+    async upsert(rows: any[] | any, { onConflict }: { onConflict?: string } = {}) {
       let currentData = getStorage(this.table);
-      const newRows = rows.map(row => ({ 
+      const rowsArray = Array.isArray(rows) ? rows : [rows];
+      
+      const newRows = rowsArray.map(row => ({ 
         ...row, 
         id: row.id || Math.random().toString(36).substr(2, 9), 
         created_at: new Date().toISOString() 
