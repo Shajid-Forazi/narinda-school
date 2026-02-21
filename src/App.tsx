@@ -13,6 +13,8 @@ import {
   X,
   ChevronLeft,
   LogOut,
+  Lock,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -31,6 +33,106 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function SetNewPassword({ onComplete }: { onComplete: () => void }) {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: password });
+      if (error) throw error;
+      setMessage("Password set successfully! Redirecting...");
+      setTimeout(() => {
+        onComplete();
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || "Failed to set password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-slate-100">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-blue-600/20">
+            <Lock size={24} />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Set New Password</h1>
+          <p className="text-slate-500 mt-2">Please enter your new password below</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 text-red-600 text-sm">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {message && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl flex items-start gap-3 text-green-600 text-sm">
+            <span>{message}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">New Password</label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all text-sm"
+                placeholder="••••••••"
+              />
+              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Confirm Password</label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all text-sm"
+                placeholder="••••••••"
+              />
+              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Set Password'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 type View = 'admission' | 'students' | 'ledger' | 'results';
 
 export default function App() {
@@ -39,6 +141,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('admission');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -49,8 +152,11 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        // Handle password recovery event if needed, usually session is set
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' && window.location.hash.includes('type=invite')) {
+        setIsPasswordRecovery(true);
+      }
+      if (event === 'USER_UPDATED') {
+        setIsPasswordRecovery(false);
       }
       setSession(session);
     });
@@ -110,6 +216,10 @@ export default function App() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  if (isPasswordRecovery || (session && window.location.hash.includes('type=recovery'))) {
+    return <SetNewPassword onComplete={() => setIsPasswordRecovery(false)} />;
   }
 
   if (!session) {

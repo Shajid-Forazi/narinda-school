@@ -51,7 +51,7 @@ export type ResultCard = {
 };
 
 export const CLASSES = ['Play Group', 'Nursery', 'K.G', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-export const SECTIONS = ['A', 'B', 'C'];
+export const SECTIONS = ['A', 'B', 'C', 'D'];
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
