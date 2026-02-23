@@ -349,7 +349,7 @@ export default function Ledger() {
                           <th key={month} className="p-1 border border-[#ccc] text-center text-xs">বেতন/জমা</th>
                         )
                       ))}
-                      <th className="p-1 border border-[#-[#ccc]]"></th>
+                      <th className="p-1 border border-[#ccc]"></th>
                       <th className="p-1 border border-[#ccc]"></th>
                     </tr>
                   </thead>
@@ -544,7 +544,7 @@ export default function Ledger() {
               </div>
             </div>
           ))}
-        )}
+        </div>
       </div>
 
       {/* Add Student FAB */}
