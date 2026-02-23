@@ -50,6 +50,17 @@ export type ResultCard = {
   created_at?: string;
 };
 
+export type Subject = {
+  id: string;
+  name: string;
+  total_marks: number;
+  has_tutorial: boolean;
+  has_mcq: boolean;
+  has_cq: boolean;
+  order_index: number;
+  created_at?: string;
+};
+
 export const CLASSES = ['Play Group', 'Nursery', 'K.G', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 export const SECTIONS = ['A', 'B', 'C', 'D'];
 export const MONTHS = [

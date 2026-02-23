@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { supabase } from '../lib/supabase';
 import { Student, Payment, CLASSES, MONTHS, SECTIONS } from '../types';
-import { Printer, Loader2, X, Save } from 'lucide-react';
+import { Printer, Loader2, X, Save, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toBengaliNumber, formatCurrency } from '../utils';
 
 const BENGALI_MONTHS = [
@@ -20,6 +20,10 @@ export default function Ledger() {
     section: 'A',
     year: new Date().getFullYear().toString(),
   });
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'sl_no' | 'name_bengali' | 'class' | 'section' | 'total';
+    direction: 'asc' | 'desc';
+  }>({ key: 'sl_no', direction: 'asc' });
 
   // Modal state
   const [selectedCell, setSelectedCell] = useState<{studentId: string, month: string} | null>(null);
@@ -110,6 +114,46 @@ export default function Ledger() {
     return { studentTotals, monthTotals, grandTotal };
   }, [payments]);
 
+  const sortedStudents = useMemo(() => {
+    let sortableStudents = [...students];
+    if (sortConfig.key) {
+      sortableStudents.sort((a, b) => {
+        let aValue: any = a[sortConfig.key as keyof Student];
+        let bValue: any = b[sortConfig.key as keyof Student];
+
+        if (sortConfig.key === 'total') {
+           aValue = totals.studentTotals[a.id] || 0;
+           bValue = totals.studentTotals[b.id] || 0;
+        } else if (sortConfig.key === 'sl_no') {
+           aValue = parseInt(a.sl_no) || 0;
+           bValue = parseInt(b.sl_no) || 0;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableStudents;
+  }, [students, sortConfig, totals]);
+
+  const requestSort = (key: 'sl_no' | 'name_bengali' | 'class' | 'section' | 'total') => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig.key !== columnKey) return <ArrowUpDown size={14} className="opacity-30" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#2271b1]" size={32} /></div>;
 
   return (
@@ -133,6 +177,7 @@ export default function Ledger() {
             onChange={(e) => setFilters({...filters, section: e.target.value})}
             className="wp-input text-sm py-1 text-black bg-white/90 border-none"
           >
+            <option value="">সব শাখা (All)</option>
             {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
@@ -166,20 +211,56 @@ export default function Ledger() {
           <table className="w-full border-collapse text-sm print:text-xs min-w-[1000px]">
             <thead>
               <tr className="bg-[#1e3a5f] text-white text-center">
-                <th className="p-3 border border-white/10 w-12">ক্র</th>
-                <th className="p-3 border border-white/10 text-left w-64">ছাত্রের নাম</th>
-                <th className="p-3 border border-white/10 w-24">ক্লাস</th>
+                <th 
+                  className="p-3 border border-white/10 w-12 cursor-pointer hover:bg-white/10 transition-colors"
+                  onClick={() => requestSort('sl_no')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    ক্র <SortIcon columnKey="sl_no" />
+                  </div>
+                </th>
+                <th 
+                  className="p-3 border border-white/10 text-left w-64 cursor-pointer hover:bg-white/10 transition-colors"
+                  onClick={() => requestSort('name_bengali')}
+                >
+                  <div className="flex items-center gap-1">
+                    ছাত্রের নাম <SortIcon columnKey="name_bengali" />
+                  </div>
+                </th>
+                <th 
+                  className="p-3 border border-white/10 w-20 cursor-pointer hover:bg-white/10 transition-colors"
+                  onClick={() => requestSort('class')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    ক্লাস <SortIcon columnKey="class" />
+                  </div>
+                </th>
+                <th 
+                  className="p-3 border border-white/10 w-20 cursor-pointer hover:bg-white/10 transition-colors"
+                  onClick={() => requestSort('section')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    শাখা <SortIcon columnKey="section" />
+                  </div>
+                </th>
                 {BENGALI_MONTHS.map((m, i) => (
                   <th key={i} className="p-3 border border-white/10 w-20">{m}</th>
                 ))}
-                <th className="p-3 border border-white/10 w-24 bg-[#162c46]">মোট</th>
+                <th 
+                  className="p-3 border border-white/10 w-24 bg-[#162c46] cursor-pointer hover:bg-white/10 transition-colors"
+                  onClick={() => requestSort('total')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    মোট <SortIcon columnKey="total" />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {students.length === 0 ? (
+              {sortedStudents.length === 0 ? (
                 <tr><td colSpan={16} className="p-8 text-center text-slate-400">No students found</td></tr>
               ) : (
-                students.map((student, idx) => (
+                sortedStudents.map((student, idx) => (
                   <tr key={student.id} className="hover:bg-blue-50 transition-colors group border-b border-slate-100">
                     <td className="p-2 text-center border-r border-slate-100 font-medium text-slate-500">
                       {toBengaliNumber(student.sl_no)}
@@ -191,7 +272,10 @@ export default function Ledger() {
                       </div>
                     </td>
                     <td className="p-2 text-center border-r border-slate-100 text-xs text-slate-500">
-                      {student.class} <br/> ({student.section})
+                      {student.class}
+                    </td>
+                    <td className="p-2 text-center border-r border-slate-100 text-xs text-slate-500">
+                      {student.section}
                     </td>
                     {MONTHS.map((month, mIdx) => {
                       const payment = payments.find(p => p.student_id === student.id && p.month === month && p.year === filters.year);
@@ -220,7 +304,7 @@ export default function Ledger() {
               
               {/* Grand Total Row */}
               <tr className="bg-[#1e3a5f] text-white font-bold print:bg-[#1e3a5f] print:text-white">
-                <td colSpan={3} className="p-3 text-right border-r border-white/10">সর্বমোট (Grand Total)</td>
+                <td colSpan={4} className="p-3 text-right border-r border-white/10">সর্বমোট (Grand Total)</td>
                 {MONTHS.map(m => (
                   <td key={m} className="p-3 text-center border-r border-white/10">
                     {toBengaliNumber(totals.monthTotals[m] || 0)}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { supabase } from '../lib/supabase';
-import { Student, ResultCard, CLASSES } from '../types';
+import { Student, ResultCard, CLASSES, Subject } from '../types';
 import { SUBJECTS, EXAM_NAMES } from '../constants';
-import { Search, Save, Printer, Loader2, ChevronRight, FileText } from 'lucide-react';
+import { Search, Save, Printer, Loader2, ChevronRight, FileText, Plus, Trash2, Edit2, X, Check, Ban } from 'lucide-react';
 import { toBengaliNumber, calculateGrade } from '../utils';
 import ResultCardPrint from './ResultCardPrint';
 
@@ -18,6 +18,19 @@ export default function ResultProcessing() {
   const [examType, setExamType] = useState('First Terminal');
   const [session, setSession] = useState('2025');
 
+  // Subject Management State
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [subjectForm, setSubjectForm] = useState<Partial<Subject>>({
+    name: '',
+    total_marks: 100,
+    has_tutorial: true,
+    has_mcq: false,
+    has_cq: true,
+    order_index: 0
+  });
+
   const fetchStudents = async (search: string) => {
     if (search.length < 2) return;
     const { data } = await supabase
@@ -26,6 +39,78 @@ export default function ResultProcessing() {
       .or(`name_bengali.ilike.%${search}%,name_english.ilike.%${search}%,sl_no.eq.${search}`)
       .limit(5);
     if (data) setStudents(data);
+  };
+
+  const fetchSubjects = async () => {
+    const { data, error } = await supabase.from('subjects').select('*').order('order_index', { ascending: true });
+    
+    if (!error && data && data.length > 0) {
+      setSubjects(data);
+    } else {
+      // Seed default subjects if none exist
+      const defaultSubjects = SUBJECTS.map((s, i) => ({
+        name: s.name,
+        total_marks: s.total,
+        has_tutorial: true,
+        has_mcq: false,
+        has_cq: true,
+        order_index: i
+      }));
+      
+      const { data: seeded } = await supabase.from('subjects').insert(defaultSubjects).select();
+      if (seeded) setSubjects(seeded);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  const handleSaveSubject = async () => {
+    if (!subjectForm.name || !subjectForm.total_marks) return;
+    
+    const payload = {
+      name: subjectForm.name,
+      total_marks: subjectForm.total_marks,
+      has_tutorial: subjectForm.has_tutorial,
+      has_mcq: subjectForm.has_mcq,
+      has_cq: subjectForm.has_cq,
+      order_index: editingSubject ? editingSubject.order_index : subjects.length
+    };
+
+    let error;
+    if (editingSubject) {
+      const { error: updateError } = await supabase
+        .from('subjects')
+        .update(payload)
+        .eq('id', editingSubject.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from('subjects')
+        .insert([payload]);
+      error = insertError;
+    }
+
+    if (!error) {
+      fetchSubjects();
+      setShowSubjectModal(false);
+      setEditingSubject(null);
+      setSubjectForm({
+        name: '',
+        total_marks: 100,
+        has_tutorial: true,
+        has_mcq: false,
+        has_cq: true,
+        order_index: 0
+      });
+    }
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this subject?')) return;
+    const { error } = await supabase.from('subjects').delete().eq('id', id);
+    if (!error) fetchSubjects();
   };
 
   const fetchMarks = async (studentId: string) => {
@@ -39,7 +124,7 @@ export default function ResultProcessing() {
     if (data && data.length > 0) {
       setAllMarks(data);
       // Filter for current exam type for editing
-      const currentExamMarks = SUBJECTS.map(s => {
+      const currentExamMarks = subjects.map(s => {
         const existing = data.find(d => d.subject === s.name && d.exam_type === examType);
         return existing || {
           subject: s.name,
@@ -54,7 +139,7 @@ export default function ResultProcessing() {
       setMarks(currentExamMarks);
     } else {
       setAllMarks([]);
-      setMarks(SUBJECTS.map(s => ({
+      setMarks(subjects.map(s => ({
         subject: s.name,
         tutorial_marks: 0,
         sub_marks: 0,
@@ -68,16 +153,16 @@ export default function ResultProcessing() {
   };
 
   useEffect(() => {
-    if (selectedStudent) fetchMarks(selectedStudent.id);
-  }, [selectedStudent, examType, session]);
+    if (selectedStudent && subjects.length > 0) fetchMarks(selectedStudent.id);
+  }, [selectedStudent, examType, session, subjects]);
 
   const handleMarkChange = (index: number, field: keyof ResultCard, value: string) => {
     const numValue = parseFloat(value) || 0;
     const newMarks = [...marks];
     const item = { ...newMarks[index], [field]: numValue };
     
-    const subjectConfig = SUBJECTS.find(s => s.name === item.subject);
-    const maxMarks = subjectConfig?.total || 100;
+    const subjectConfig = subjects.find(s => s.name === item.subject);
+    const maxMarks = subjectConfig?.total_marks || 100;
     
     // Auto calculate total and grade
     const total = (item.tutorial_marks || 0) + (item.sub_marks || 0) + (item.obj_marks || 0);
@@ -118,13 +203,94 @@ export default function ResultProcessing() {
             <Printer size={16} /> Print Result Card
           </button>
         </div>
-        <ResultCardPrint student={selectedStudent} allMarks={allMarks} examType={examType} session={session} />
+        <ResultCardPrint student={selectedStudent} allMarks={allMarks} examType={examType} session={session} subjects={subjects} />
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl space-y-6">
+      {/* Subject Management Panel */}
+      <div className="wp-card p-6 rounded space-y-4">
+        <div className="flex items-center justify-between">
+            <h3 className="font-bold text-[#1d2327] flex items-center gap-2">
+                <FileText size={18} className="text-[#2271b1]" />
+                Subject Management
+            </h3>
+            <button 
+                onClick={() => {
+                    setEditingSubject(null);
+                    setSubjectForm({
+                        name: '',
+                        total_marks: 100,
+                        has_tutorial: true,
+                        has_mcq: false,
+                        has_cq: true,
+                        order_index: subjects.length
+                    });
+                    setShowSubjectModal(true);
+                }}
+                className="wp-button text-sm py-1 flex items-center gap-2"
+            >
+                <Plus size={14} /> Add Subject
+            </button>
+        </div>
+        
+        <div className="border border-[#c3c4c7] rounded overflow-hidden">
+            <table className="w-full text-left border-collapse">
+                <thead>
+                    <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7] text-xs font-bold text-slate-500 uppercase">
+                        <th className="p-2 w-12 text-center">SL</th>
+                        <th className="p-2">Subject Name</th>
+                        <th className="p-2 w-20 text-center">Total</th>
+                        <th className="p-2 w-20 text-center">Tutorial</th>
+                        <th className="p-2 w-20 text-center">MCQ</th>
+                        <th className="p-2 w-20 text-center">CQ</th>
+                        <th className="p-2 w-20 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-[#c3c4c7]">
+                    {subjects.map((s, i) => (
+                        <tr key={s.id} className="hover:bg-[#f6f7f7]">
+                            <td className="p-2 text-center text-sm">{toBengaliNumber(i + 1)}</td>
+                            <td className="p-2 text-sm font-bold">{s.name}</td>
+                            <td className="p-2 text-center text-sm">{s.total_marks}</td>
+                            <td className="p-2 text-center">
+                                {s.has_tutorial ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                            </td>
+                            <td className="p-2 text-center">
+                                {s.has_mcq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                            </td>
+                            <td className="p-2 text-center">
+                                {s.has_cq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                            </td>
+                            <td className="p-2 text-right">
+                                <div className="flex justify-end gap-2">
+                                    <button 
+                                        onClick={() => {
+                                            setEditingSubject(s);
+                                            setSubjectForm(s);
+                                            setShowSubjectModal(true);
+                                        }}
+                                        className="text-slate-400 hover:text-[#2271b1]"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeleteSubject(s.id)}
+                                        className="text-slate-400 hover:text-red-600"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+      </div>
+
       <div className="wp-card p-6 rounded space-y-4">
         <h3 className="font-bold text-[#1d2327] flex items-center gap-2">
           <Search size={18} className="text-[#2271b1]" />
@@ -221,57 +387,75 @@ export default function ResultProcessing() {
               <tr className="bg-[#f6f7f7] text-left text-[10px] font-bold text-slate-500 uppercase">
                 <th className="p-3 border-b border-[#c3c4c7]">Subject</th>
                 <th className="p-3 border-b border-[#c3c4c7] text-center">Tutorial</th>
-                <th className="p-3 border-b border-[#c3c4c7] text-center">Sub/Obj</th>
+                <th className="p-3 border-b border-[#c3c4c7] text-center">CQ</th>
+                <th className="p-3 border-b border-[#c3c4c7] text-center">MCQ</th>
                 <th className="p-3 border-b border-[#c3c4c7] text-center bg-[#f0f0f1]">Total</th>
                 <th className="p-3 border-b border-[#c3c4c7] text-center">Grade</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#c3c4c7]">
-              {marks.map((mark, idx) => (
-                <tr key={mark.subject} className="hover:bg-[#f6f7f7]">
-                  <td className="p-3 font-bold text-sm">
-                    {mark.subject}
-                    <span className="text-[8px] text-slate-400 block">Max: {SUBJECTS.find(s => s.name === mark.subject)?.total}</span>
-                  </td>
-                  <td className="p-3">
-                    <input 
-                      type="number" 
-                      value={mark.tutorial_marks}
-                      onChange={(e) => handleMarkChange(idx, 'tutorial_marks', e.target.value)}
-                      className="wp-input w-16 mx-auto block text-center text-sm py-1"
-                    />
-                  </td>
-                  <td className="p-3">
-                    <div className="flex gap-1 justify-center">
-                      <input 
-                        type="number" 
-                        placeholder="Sub"
-                        value={mark.sub_marks}
-                        onChange={(e) => handleMarkChange(idx, 'sub_marks', e.target.value)}
-                        className="wp-input w-14 text-center text-xs py-1"
-                      />
-                      <input 
-                        type="number" 
-                        placeholder="Obj"
-                        value={mark.obj_marks}
-                        onChange={(e) => handleMarkChange(idx, 'obj_marks', e.target.value)}
-                        className="wp-input w-14 text-center text-xs py-1"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-3 text-center font-bold text-sm bg-[#f0f0f1]">
-                    {toBengaliNumber(mark.total_marks || 0)}
-                  </td>
-                  <td className="p-3 text-center">
-                    <span className={clsx(
-                      "font-bold text-sm",
-                      mark.grade === 'F' ? "text-red-600" : "text-[#2271b1]"
-                    )}>
-                      {mark.grade}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {marks.map((mark, idx) => {
+                const subject = subjects.find(s => s.name === mark.subject);
+                if (!subject) return null;
+
+                return (
+                  <tr key={mark.subject} className="hover:bg-[#f6f7f7]">
+                    <td className="p-3 font-bold text-sm">
+                      {mark.subject}
+                      <span className="text-[8px] text-slate-400 block">Max: {subject.total_marks}</span>
+                    </td>
+                    <td className="p-3">
+                      {subject.has_tutorial ? (
+                        <input 
+                          type="number" 
+                          value={mark.tutorial_marks}
+                          onChange={(e) => handleMarkChange(idx, 'tutorial_marks', e.target.value)}
+                          className="wp-input w-16 mx-auto block text-center text-sm py-1"
+                        />
+                      ) : (
+                        <div className="text-center text-slate-300">-</div>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {subject.has_cq ? (
+                        <input 
+                          type="number" 
+                          placeholder="CQ"
+                          value={mark.sub_marks}
+                          onChange={(e) => handleMarkChange(idx, 'sub_marks', e.target.value)}
+                          className="wp-input w-16 mx-auto block text-center text-sm py-1"
+                        />
+                      ) : (
+                        <div className="text-center text-slate-300">-</div>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {subject.has_mcq ? (
+                        <input 
+                          type="number" 
+                          placeholder="MCQ"
+                          value={mark.obj_marks}
+                          onChange={(e) => handleMarkChange(idx, 'obj_marks', e.target.value)}
+                          className="wp-input w-16 mx-auto block text-center text-sm py-1"
+                        />
+                      ) : (
+                        <div className="text-center text-slate-300">-</div>
+                      )}
+                    </td>
+                    <td className="p-3 text-center font-bold text-sm bg-[#f0f0f1]">
+                      {toBengaliNumber(mark.total_marks || 0)}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={clsx(
+                        "font-bold text-sm",
+                        mark.grade === 'F' ? "text-red-600" : "text-[#2271b1]"
+                      )}>
+                        {mark.grade}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -281,6 +465,81 @@ export default function ResultProcessing() {
         <div className="py-20 text-center wp-card rounded border-dashed">
           <FileText size={48} className="mx-auto mb-4 text-slate-200" />
           <p className="text-slate-500">Search and select a student to process results.</p>
+        </div>
+      )}
+
+      {/* Subject Modal */}
+      {showSubjectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
+                <h3 className="font-bold text-lg">{editingSubject ? 'Edit Subject' : 'Add New Subject'}</h3>
+                
+                <div className="space-y-3">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Subject Name</label>
+                        <input 
+                            type="text" 
+                            value={subjectForm.name}
+                            onChange={e => setSubjectForm({...subjectForm, name: e.target.value})}
+                            className="wp-input w-full"
+                            placeholder="e.g. Bangla 1st Paper"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Total Marks</label>
+                        <input 
+                            type="number" 
+                            value={subjectForm.total_marks}
+                            onChange={e => setSubjectForm({...subjectForm, total_marks: parseInt(e.target.value) || 0})}
+                            className="wp-input w-full"
+                        />
+                    </div>
+                    <div className="flex gap-4 pt-2">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={subjectForm.has_tutorial}
+                                onChange={e => setSubjectForm({...subjectForm, has_tutorial: e.target.checked})}
+                                className="rounded border-slate-300 text-[#2271b1] focus:ring-[#2271b1]"
+                            />
+                            Has Tutorial
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={subjectForm.has_mcq}
+                                onChange={e => setSubjectForm({...subjectForm, has_mcq: e.target.checked})}
+                                className="rounded border-slate-300 text-[#2271b1] focus:ring-[#2271b1]"
+                            />
+                            Has MCQ
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={subjectForm.has_cq}
+                                onChange={e => setSubjectForm({...subjectForm, has_cq: e.target.checked})}
+                                className="rounded border-slate-300 text-[#2271b1] focus:ring-[#2271b1]"
+                            />
+                            Has CQ
+                        </label>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <button 
+                        onClick={() => setShowSubjectModal(false)}
+                        className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded text-sm font-medium"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleSaveSubject}
+                        className="wp-button px-4 py-2 text-sm font-medium"
+                    >
+                        Save Subject
+                    </button>
+                </div>
+            </div>
         </div>
       )}
     </div>

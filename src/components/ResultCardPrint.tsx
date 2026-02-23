@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Student, ResultCard } from '../types';
+import { Student, ResultCard, Subject } from '../types';
 import { toBengaliNumber } from '../utils';
-import { SUBJECTS } from '../constants';
 import { supabase } from '../lib/supabase';
 import { Upload } from 'lucide-react';
 
@@ -10,9 +9,10 @@ interface Props {
   allMarks: ResultCard[];
   examType: string;
   session: string;
+  subjects: Subject[];
 }
 
-export default function ResultCardPrint({ student, allMarks, examType, session }: Props) {
+export default function ResultCardPrint({ student, allMarks, examType, session, subjects }: Props) {
   const [schoolLogoUrl, setSchoolLogoUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
@@ -75,7 +75,7 @@ export default function ResultCardPrint({ student, allMarks, examType, session }
     const examMarks = allMarks.filter(m => m.exam_type === exam);
     if (examMarks.length === 0) return '0.00';
     const totalGP = examMarks.reduce((acc, m) => acc + (m.grade_point || 0), 0);
-    return (totalGP / SUBJECTS.length).toFixed(2);
+    return (totalGP / subjects.length).toFixed(2);
   };
 
   const getExamTotal = (exam: string) => {
@@ -247,7 +247,7 @@ export default function ResultCardPrint({ student, allMarks, examType, session }
                 </tr>
               </thead>
               <tbody>
-                {SUBJECTS.map((s) => {
+                {subjects.map((s) => {
                   const m1 = getMark('First Terminal', s.name);
                   const m2 = getMark('Second Terminal', s.name);
                   const m3 = getMark('Annual', s.name);
@@ -255,7 +255,7 @@ export default function ResultCardPrint({ student, allMarks, examType, session }
                   return (
                     <tr key={s.name}>
                       <td className="border border-black p-0.5 font-bold truncate max-w-[80px]">{s.name}</td>
-                      <td className="border border-black p-0.5 text-center">{s.total}</td>
+                      <td className="border border-black p-0.5 text-center">{toBengaliNumber(s.total_marks)}</td>
                       {/* Exam 1 Data */}
                       <td className="border border-black p-0.5 text-center">{toBengaliNumber(m1?.tutorial_marks || '')}</td>
                       <td className="border border-black p-0.5 text-center">{toBengaliNumber((m1?.sub_marks || 0) + (m1?.obj_marks || 0) || '')}</td>
