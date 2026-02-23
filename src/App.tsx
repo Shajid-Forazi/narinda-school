@@ -144,15 +144,15 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // Check URL hash for invite or recovery tokens on initial load
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.replace('#', ''));
     const type = params.get('type');
-    
+
     if (type === 'invite' || type === 'recovery') {
       setIsPasswordRecovery(true);
     }
 
+    // Restore session on refresh
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -164,9 +164,9 @@ export default function App() {
       }
       if (event === 'USER_UPDATED') {
         setIsPasswordRecovery(false);
+        window.location.hash = '';
       }
       setSession(session);
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
