@@ -94,8 +94,10 @@ export default function ResultProcessing() {
 
     if (!error) {
       fetchSubjects();
-      setShowSubjectModal(false);
-      setEditingSubject(null);
+      // Don't close modal, just reset form if adding, or switch back to add mode if editing
+      if (editingSubject) {
+          setEditingSubject(null);
+      }
       setSubjectForm({
         name: '',
         total_marks: 100,
@@ -210,85 +212,15 @@ export default function ResultProcessing() {
 
   return (
     <div className="max-w-5xl space-y-6">
-      {/* Subject Management Panel */}
-      <div className="wp-card p-6 rounded space-y-4">
-        <div className="flex items-center justify-between">
-            <h3 className="font-bold text-[#1d2327] flex items-center gap-2">
-                <FileText size={18} className="text-[#2271b1]" />
-                Subject Management
-            </h3>
-            <button 
-                onClick={() => {
-                    setEditingSubject(null);
-                    setSubjectForm({
-                        name: '',
-                        total_marks: 100,
-                        has_tutorial: true,
-                        has_mcq: false,
-                        has_cq: true,
-                        order_index: subjects.length
-                    });
-                    setShowSubjectModal(true);
-                }}
-                className="wp-button text-sm py-1 flex items-center gap-2"
-            >
-                <Plus size={14} /> Add Subject
-            </button>
-        </div>
-        
-        <div className="border border-[#c3c4c7] rounded overflow-hidden">
-            <table className="w-full text-left border-collapse">
-                <thead>
-                    <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7] text-xs font-bold text-slate-500 uppercase">
-                        <th className="p-2 w-12 text-center">SL</th>
-                        <th className="p-2">Subject Name</th>
-                        <th className="p-2 w-20 text-center">Total</th>
-                        <th className="p-2 w-20 text-center">Tutorial</th>
-                        <th className="p-2 w-20 text-center">MCQ</th>
-                        <th className="p-2 w-20 text-center">CQ</th>
-                        <th className="p-2 w-20 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-[#c3c4c7]">
-                    {subjects.map((s, i) => (
-                        <tr key={s.id} className="hover:bg-[#f6f7f7]">
-                            <td className="p-2 text-center text-sm">{toBengaliNumber(i + 1)}</td>
-                            <td className="p-2 text-sm font-bold">{s.name}</td>
-                            <td className="p-2 text-center text-sm">{s.total_marks}</td>
-                            <td className="p-2 text-center">
-                                {s.has_tutorial ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
-                            </td>
-                            <td className="p-2 text-center">
-                                {s.has_mcq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
-                            </td>
-                            <td className="p-2 text-center">
-                                {s.has_cq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
-                            </td>
-                            <td className="p-2 text-right">
-                                <div className="flex justify-end gap-2">
-                                    <button 
-                                        onClick={() => {
-                                            setEditingSubject(s);
-                                            setSubjectForm(s);
-                                            setShowSubjectModal(true);
-                                        }}
-                                        className="text-slate-400 hover:text-[#2271b1]"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDeleteSubject(s.id)}
-                                        className="text-slate-400 hover:text-red-600"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+      {/* Top Header with Subject Manager Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-[#1d2327]">Result Processing</h2>
+        <button 
+            onClick={() => setShowSubjectModal(true)}
+            className="wp-button text-sm py-1.5 flex items-center gap-2 bg-white text-[#2271b1] border border-[#2271b1] hover:bg-[#f0f6fb]"
+        >
+            <FileText size={16} /> Manage Subjects
+        </button>
       </div>
 
       <div className="wp-card p-6 rounded space-y-4">
@@ -365,6 +297,12 @@ export default function ResultProcessing() {
               </datalist>
             </div>
             <div className="flex gap-2">
+              <button 
+                onClick={() => setShowSubjectModal(true)}
+                className="text-sm font-medium text-[#2271b1] hover:underline px-3 flex items-center gap-1"
+              >
+                <Edit2 size={14} /> Subjects
+              </button>
               <button 
                 onClick={() => setShowPrint(true)}
                 className="text-sm font-medium text-[#2271b1] hover:underline px-3"
@@ -468,34 +406,43 @@ export default function ResultProcessing() {
         </div>
       )}
 
-      {/* Subject Modal */}
+      {/* Subject Management Modal */}
       {showSubjectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
-                <h3 className="font-bold text-lg">{editingSubject ? 'Edit Subject' : 'Add New Subject'}</h3>
-                
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Subject Name</label>
-                        <input 
-                            type="text" 
-                            value={subjectForm.name}
-                            onChange={e => setSubjectForm({...subjectForm, name: e.target.value})}
-                            className="wp-input w-full"
-                            placeholder="e.g. Bangla 1st Paper"
-                        />
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center border-b pb-4">
+                    <h3 className="font-bold text-xl text-[#1d2327]">Subject Management</h3>
+                    <button onClick={() => setShowSubjectModal(false)} className="text-slate-400 hover:text-slate-600">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Add/Edit Form */}
+                <div className="bg-[#f0f6fb] p-4 rounded border border-[#72aee6] space-y-3">
+                    <h4 className="font-bold text-sm text-[#2271b1]">{editingSubject ? 'Edit Subject' : 'Add New Subject'}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Subject Name</label>
+                            <input 
+                                type="text" 
+                                value={subjectForm.name}
+                                onChange={e => setSubjectForm({...subjectForm, name: e.target.value})}
+                                className="wp-input w-full"
+                                placeholder="e.g. Bangla 1st Paper"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Total Marks</label>
+                            <input 
+                                type="number" 
+                                value={subjectForm.total_marks}
+                                onChange={e => setSubjectForm({...subjectForm, total_marks: parseInt(e.target.value) || 0})}
+                                className="wp-input w-full"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Total Marks</label>
-                        <input 
-                            type="number" 
-                            value={subjectForm.total_marks}
-                            onChange={e => setSubjectForm({...subjectForm, total_marks: parseInt(e.target.value) || 0})}
-                            className="wp-input w-full"
-                        />
-                    </div>
-                    <div className="flex gap-4 pt-2">
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <div className="flex flex-wrap gap-4 pt-2">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                             <input 
                                 type="checkbox" 
                                 checked={subjectForm.has_tutorial}
@@ -504,7 +451,7 @@ export default function ResultProcessing() {
                             />
                             Has Tutorial
                         </label>
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                             <input 
                                 type="checkbox" 
                                 checked={subjectForm.has_mcq}
@@ -513,7 +460,7 @@ export default function ResultProcessing() {
                             />
                             Has MCQ
                         </label>
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                             <input 
                                 type="checkbox" 
                                 checked={subjectForm.has_cq}
@@ -523,21 +470,87 @@ export default function ResultProcessing() {
                             Has CQ
                         </label>
                     </div>
+                    <div className="flex justify-end gap-2">
+                        {editingSubject && (
+                            <button 
+                                onClick={() => {
+                                    setEditingSubject(null);
+                                    setSubjectForm({
+                                        name: '',
+                                        total_marks: 100,
+                                        has_tutorial: true,
+                                        has_mcq: false,
+                                        has_cq: true,
+                                        order_index: subjects.length
+                                    });
+                                }}
+                                className="px-3 py-1 text-slate-500 hover:text-slate-700 text-sm"
+                            >
+                                Cancel Edit
+                            </button>
+                        )}
+                        <button 
+                            onClick={handleSaveSubject}
+                            className="wp-button px-4 py-1.5 text-sm font-medium flex items-center gap-2"
+                        >
+                            {editingSubject ? <Save size={14} /> : <Plus size={14} />}
+                            {editingSubject ? 'Update Subject' : 'Add Subject'}
+                        </button>
+                    </div>
                 </div>
-
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                    <button 
-                        onClick={() => setShowSubjectModal(false)}
-                        className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded text-sm font-medium"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={handleSaveSubject}
-                        className="wp-button px-4 py-2 text-sm font-medium"
-                    >
-                        Save Subject
-                    </button>
+                
+                {/* Subject List Table */}
+                <div className="border border-[#c3c4c7] rounded overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7] text-xs font-bold text-slate-500 uppercase">
+                                <th className="p-2 w-12 text-center">SL</th>
+                                <th className="p-2">Subject Name</th>
+                                <th className="p-2 w-20 text-center">Total</th>
+                                <th className="p-2 w-20 text-center">Tutorial</th>
+                                <th className="p-2 w-20 text-center">MCQ</th>
+                                <th className="p-2 w-20 text-center">CQ</th>
+                                <th className="p-2 w-20 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#c3c4c7]">
+                            {subjects.map((s, i) => (
+                                <tr key={s.id} className={clsx("hover:bg-[#f6f7f7]", editingSubject?.id === s.id && "bg-blue-50")}>
+                                    <td className="p-2 text-center text-sm">{toBengaliNumber(i + 1)}</td>
+                                    <td className="p-2 text-sm font-bold">{s.name}</td>
+                                    <td className="p-2 text-center text-sm">{s.total_marks}</td>
+                                    <td className="p-2 text-center">
+                                        {s.has_tutorial ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                        {s.has_mcq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                        {s.has_cq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                                    </td>
+                                    <td className="p-2 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <button 
+                                                onClick={() => {
+                                                    setEditingSubject(s);
+                                                    setSubjectForm(s);
+                                                }}
+                                                className="text-slate-400 hover:text-[#2271b1]"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDeleteSubject(s.id)}
+                                                className="text-slate-400 hover:text-red-600"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
