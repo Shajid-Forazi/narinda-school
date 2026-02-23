@@ -1,9 +1,8 @@
 {
-  "name": "Narinda Ideal School Management",
-  "short_name": "NarindaSchool",
-  "description": "School Management and Result Processing System",
+  "name": "Narinda School",
+  "short_name": "Narinda",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2271b1"
+  "theme_color": "#1e3a5f"
 }
