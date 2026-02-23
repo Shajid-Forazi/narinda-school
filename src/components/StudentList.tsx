@@ -22,14 +22,14 @@ export default function StudentList({ onEdit }: Props) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const pageSize = 20;
 
-  const fetchStudents = async () => {
+  const fetchStudents = async (term: string = searchTerm) => {
     setLoading(true);
     let query = supabase
       .from('students')
       .select('id, name_bengali, name_english, class, section, sl_no, shift, present_phone, photo_url', { count: 'exact' });
     
-    if (searchTerm) {
-      query = query.or(`name_bengali.ilike.%${searchTerm}%,name_english.ilike.%${searchTerm}%,sl_no.eq.${searchTerm}`);
+    if (term) {
+      query = query.or(`name_bengali.ilike.%${term}%,name_english.ilike.%${term}%,sl_no.eq.${term}`);
     }
     if (filters.class) query = query.eq('class', filters.class);
     if (filters.section) query = query.eq('section', filters.section);
@@ -51,13 +51,13 @@ export default function StudentList({ onEdit }: Props) {
   };
 
   useEffect(() => {
-    fetchStudents();
+    fetchStudents(searchTerm);
   }, [filters, page, searchTerm]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('আপনি কি নিশ্চিত যে আপনি এই শিক্ষার্থীর তথ্য মুছে ফেলতে চান?')) return;
     const { error } = await supabase.from('students').delete().eq('id', id);
-    if (!error) fetchStudents();
+    if (!error) fetchStudents(searchTerm);
   };
 
   const handleViewProfile = async (id: string) => {
@@ -83,7 +83,7 @@ export default function StudentList({ onEdit }: Props) {
               type="text" 
               placeholder="নাম লিখুন..." 
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               className="wp-input text-sm py-1 pl-8 w-full"
             />
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
