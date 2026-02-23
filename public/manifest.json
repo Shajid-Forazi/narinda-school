@@ -1,21 +1,9 @@
 {
-  "name": "Result Processing App",
-  "short_name": "ResultApp",
-  "description": "A simple application for processing student results.",
+  "name": "Narinda Ideal School Management",
+  "short_name": "NarindaSchool",
+  "description": "School Management and Result Processing System",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2271b1",
-  "icons": [
-    {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "theme_color": "#2271b1"
 }
