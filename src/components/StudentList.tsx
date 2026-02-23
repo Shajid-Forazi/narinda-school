@@ -126,83 +126,85 @@ export default function StudentList({ onEdit }: Props) {
 
       {/* Student Table */}
       <div className="wp-card rounded overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7]">
-              <th className="p-3 text-sm font-bold w-12">SL.NO</th>
-              <th className="p-3 text-sm font-bold w-16">Photo</th>
-              <th className="p-3 text-sm font-bold">Student Name</th>
-              <th className="p-3 text-sm font-bold">Class</th>
-              <th className="p-3 text-sm font-bold">Section</th>
-              <th className="p-3 text-sm font-bold">Shift</th>
-              <th className="p-3 text-sm font-bold">Phone</th>
-              <th className="p-3 text-sm font-bold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#c3c4c7]">
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="p-8 text-center text-slate-400">লোড হচ্ছে...</td>
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-max w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7]">
+                <th className="p-3 text-sm font-bold w-12">SL.NO</th>
+                <th className="p-3 text-sm font-bold w-16">Photo</th>
+                <th className="p-3 text-sm font-bold">Student Name</th>
+                <th className="p-3 text-sm font-bold">Class</th>
+                <th className="p-3 text-sm font-bold">Section</th>
+                <th className="p-3 text-sm font-bold">Shift</th>
+                <th className="p-3 text-sm font-bold">Phone</th>
+                <th className="p-3 text-sm font-bold text-right">Actions</th>
               </tr>
-            ) : students.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="p-8 text-center text-slate-400">কোনো শিক্ষার্থী পাওয়া যায়নি।</td>
-              </tr>
-            ) : (
-              students.map((student, index) => (
-                <tr key={student.id} className="hover:bg-[#f6f7f7]">
-                  <td className="p-3 text-sm text-slate-500">
-                    {toBengaliNumber(student.sl_no)}
-                  </td>
-                  <td className="p-3">
-                    <div className="w-10 h-10 bg-slate-100 rounded border border-[#c3c4c7] overflow-hidden">
-                      {student.photo_url ? (
-                        <img src={student.photo_url} alt={student.name_bengali} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
-                          <User size={20} />
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="font-bold text-sm text-[#1e40af]">{student.name_bengali}</div>
-                    <div className="text-[10px] text-slate-400 uppercase">{student.name_english}</div>
-                  </td>
-                  <td className="p-3 text-sm">{student.class}</td>
-                  <td className="p-3 text-sm">{student.section}</td>
-                  <td className="p-3 text-sm">{student.shift}</td>
-                  <td className="p-3 text-sm">{toBengaliNumber(student.present_phone)}</td>
-                  <td className="p-3">
-                    <div className="flex justify-end gap-2">
-                      <button 
-                        onClick={() => handleViewProfile(student.id)}
-                        className="text-slate-400 hover:text-[#2271b1] p-1"
-                        title="View Profile"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleEditClick(student.id)}
-                        className="text-slate-400 hover:text-[#2271b1] p-1"
-                        title="Edit"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(student.id)}
-                        className="text-slate-400 hover:text-red-600 p-1"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+            </thead>
+            <tbody className="divide-y divide-[#c3c4c7]">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="p-8 text-center text-slate-400">লোড হচ্ছে...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : students.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="p-8 text-center text-slate-400">কোনো শিক্ষার্থী পাওয়া যায়নি।</td>
+                </tr>
+              ) : (
+                students.map((student, index) => (
+                  <tr key={student.id} className="hover:bg-[#f6f7f7]">
+                    <td className="p-3 text-sm text-slate-500">
+                      {toBengaliNumber(student.sl_no)}
+                    </td>
+                    <td className="p-3">
+                      <div className="w-10 h-10 bg-slate-100 rounded border border-[#c3c4c7] overflow-hidden">
+                        {student.photo_url ? (
+                          <img src={student.photo_url} alt={student.name_bengali} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <User size={20} />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="font-bold text-sm text-[#1e40af]">{student.name_bengali}</div>
+                      <div className="text-[10px] text-slate-400 uppercase">{student.name_english}</div>
+                    </td>
+                    <td className="p-3 text-sm">{student.class}</td>
+                    <td className="p-3 text-sm">{student.section}</td>
+                    <td className="p-3 text-sm">{student.shift}</td>
+                    <td className="p-3 text-sm">{toBengaliNumber(student.present_phone)}</td>
+                    <td className="p-3">
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => handleViewProfile(student.id)}
+                          className="text-slate-400 hover:text-[#2271b1] p-1"
+                          title="View Profile"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleEditClick(student.id)}
+                          className="text-slate-400 hover:text-[#2271b1] p-1"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(student.id)}
+                          className="text-slate-400 hover:text-red-600 p-1"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

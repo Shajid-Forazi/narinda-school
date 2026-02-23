@@ -13,8 +13,32 @@
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
   body {
     @apply bg-wp-bg text-[#1d2327];
+    overflow-x: hidden;
+  }
+
+  input, select, textarea {
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS zoom */
+    width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .main-content {
+      margin-left: 0 !important;
+      padding: 12px !important;
+    }
+    table {
+      font-size: 13px;
+    }
+    button {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 
   @media print {

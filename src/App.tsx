@@ -245,11 +245,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex font-sans text-[#1a1a1a]">
+      {/* Sidebar Overlay (mobile only) */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+        />
+      )}
+
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-white border-r border-slate-200 transition-all duration-300 flex flex-col print:hidden sticky top-0 h-screen",
-          isSidebarOpen ? "w-64" : "w-16"
+          "bg-white border-r border-slate-200 transition-all duration-300 flex flex-col print:hidden sticky top-0 h-screen z-40",
+          isSidebarOpen ? "w-64" : "w-16",
+          "md:relative fixed inset-y-0 left-0",
+          !isSidebarOpen && "-translate-x-full md:translate-x-0"
         )}
       >
         <div className={cn("h-16 flex items-center mb-4", isSidebarOpen ? "px-4 justify-between" : "justify-center")}>
@@ -322,12 +332,20 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10 print:hidden">
-          <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-widest">
-            {editingStudent && currentView === 'admission' 
-              ? 'Edit Student' 
-              : navItems.find(i => i.id === currentView)?.label}
-          </h2>
+        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 print:hidden">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 text-slate-500 hover:bg-slate-50 rounded-lg"
+            >
+              <Menu size={20} />
+            </button>
+            <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-widest">
+              {editingStudent && currentView === 'admission' 
+                ? 'Edit Student' 
+                : navItems.find(i => i.id === currentView)?.label}
+            </h2>
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">
               <span className="text-xs font-semibold text-slate-900">Admin</span>

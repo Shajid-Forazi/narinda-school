@@ -2,21 +2,15 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 import { supabase } from '../lib/supabase';
 import { Student, Payment, CLASSES, MONTHS, SECTIONS } from '../types';
-import { Printer, Loader2, X, Save, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle2, Plus } from 'lucide-react';
-import { toBengaliNumber, formatCurrency } from '../utils';
+import { Printer, Loader2, CheckCircle2, Plus } from 'lucide-react';
+import { toBengaliNumber } from '../utils';
 
 const BENGALI_MONTHS_SHORT = [
-  'জানু', 'ফেব', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-  'জুলাই', 'আগস্ট', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'
-];
-
-const BENGALI_MONTHS_FULL = [
-  'জানুয়ারী', 'ফেব্রুয়ারী', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-  'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
 
 const SPECIAL_MONTHS = ['April', 'August', 'December'];
-
 const STUDENTS_PER_CARD = 10;
 
 export default function Ledger() {
@@ -28,17 +22,13 @@ export default function Ledger() {
     class: 'One',
     section: 'A',
     year: new Date().getFullYear().toString(),
-    cardDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+    cardDate: new Date().toISOString().split('T')[0],
   });
-  const [sortConfig, setSortConfig] = useState<{
-    key: 'sl_no' | 'name_bengali' | 'class' | 'section' | 'total';
-    direction: 'asc' | 'desc';
-  }>({ key: 'sl_no', direction: 'asc' });
 
   // Inline editing state
   const [editingCell, setEditingCell] = useState<{studentId: string, month: string, field: keyof Payment} | null>(null);
-  const [inlineEditValue, setInlineEditValue] = useState<number>(0);
-  const [showSaveSuccess, setShowSaveSuccess] = useState<boolean>(false);
+  const [inlineEditValue, setInlineEditValue] = useState<string>('');
+  const [showSaveSuccess, setShowSaveSuccess] = useState<{studentId: string, month: string, field: string} | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
@@ -54,20 +44,14 @@ export default function Ledger() {
     }
 
     const { data: stdData, error: stdError } = await studentQuery;
-    if (stdError) {
-      console.error("Error fetching students:", stdError);
-      alert("Failed to fetch students: " + stdError.message);
-    }
+    if (stdError) console.error("Error fetching students:", stdError);
     
     const { data: payData, error: payError } = await supabase
       .from('payments')
       .select('*')
       .eq('year', filters.year);
 
-    if (payError) {
-      console.error("Error fetching payments:", payError);
-      alert("Failed to fetch payments: " + payError.message);
-    }
+    if (payError) console.error("Error fetching payments:", payError);
 
     if (stdData) setStudents(stdData);
     if (payData) setPayments(payData);
@@ -80,22 +64,32 @@ export default function Ledger() {
 
   const handleCellClick = (studentId: string, month: string, field: keyof Payment, currentValue: number) => {
     setEditingCell({ studentId, month, field });
-    setInlineEditValue(currentValue);
+    setInlineEditValue(currentValue === 0 ? '' : currentValue.toString());
   };
 
   const handleInlineSave = async () => {
     if (!editingCell) return;
-    setSaving(true);
-
+    
+    const newValue = parseFloat(inlineEditValue) || 0;
     const { studentId, month, field } = editingCell;
+    
+    // Find existing payment for this student/month/year
     const existingPayment = payments.find(p => p.student_id === studentId && p.month === month && p.year === filters.year);
+    
+    // Only save if value changed
+    const oldValue = existingPayment ? (existingPayment[field] as number) : 0;
+    if (newValue === oldValue && existingPayment) {
+      setEditingCell(null);
+      return;
+    }
 
+    setSaving(true);
     const payload = {
       student_id: studentId,
       year: filters.year,
       month: month,
-      ...existingPayment,
-      [field]: inlineEditValue
+      ...(existingPayment || {}),
+      [field]: newValue
     };
 
     const { data, error } = await supabase
@@ -108,21 +102,20 @@ export default function Ledger() {
         const other = prev.filter(p => !(p.student_id === studentId && p.month === month && p.year === filters.year));
         return [...other, data[0]];
       });
-      setShowSaveSuccess(true);
-      setTimeout(() => setShowSaveSuccess(false), 1500); // Show checkmark for 1.5 seconds
+      setShowSaveSuccess({ studentId, month, field });
+      setTimeout(() => setShowSaveSuccess(null), 1000);
     } else {
       console.error("Error saving payment:", error);
-      alert("Failed to save payment: " + error?.message);
     }
     setSaving(false);
     setEditingCell(null);
   };
 
   const handleAddStudent = async () => {
-    const studentName = prompt("নতুন ছাত্রের নাম লিখুন (Enter new student's Bengali name):");
+    const studentName = prompt("ছাত্রের নাম (Bengali):");
     if (!studentName) return;
 
-    const studentRoll = prompt("নতুন ছাত্রের রোল নম্বর লিখুন (Enter new student's roll number):");
+    const studentRoll = prompt("রোল নম্বর:");
     if (!studentRoll) return;
 
     setSaving(true);
@@ -130,7 +123,7 @@ export default function Ledger() {
       const newStudent: Omit<Student, 'id' | 'created_at'> = {
         sl_no: studentRoll,
         name_bengali: studentName,
-        name_english: '', // Default empty
+        name_english: '',
         father_name: '',
         father_occupation: '',
         mother_name: '',
@@ -139,14 +132,14 @@ export default function Ledger() {
         present_phone: '',
         permanent_address: '',
         permanent_phone: '',
-        date_of_birth: '2000-01-01', // Default date
+        date_of_birth: '2000-01-01',
         class: filters.class,
         section: filters.section,
-        shift: 'Morning', // Default shift
+        shift: 'Day',
         previous_institute: '',
         previous_address: '',
         previous_class: '',
-        session: filters.year, // Use current year as session
+        session: filters.year,
         photo_url: null,
       };
 
@@ -155,17 +148,11 @@ export default function Ledger() {
         .insert([newStudent])
         .select();
 
-      if (error) {
-        console.error("Error adding student:", error);
-        alert("ছাত্র যোগ করতে ব্যর্থ: " + error.message);
-      } else if (data && data.length > 0) {
+      if (!error && data) {
         setStudents(prev => [...prev, data[0]]);
-        alert(`ছাত্র ${studentName} সফলভাবে যোগ করা হয়েছে।`);
-        fetchData(); // Re-fetch all data to ensure payments are also updated if any defaults are set
       }
     } catch (error) {
-      console.error("Unexpected error adding student:", error);
-      alert("একটি অপ্রত্যাশিত ত্রুটি হয়েছে।");
+      console.error("Error adding student:", error);
     } finally {
       setSaving(false);
     }
@@ -186,23 +173,16 @@ export default function Ledger() {
       miscellaneous: number;
       grand_total: number;
     }> = {};
+    
     const columnTotals = {
       admission_fee: 0,
       backdue: 0,
-      jan_salary: 0, jan_exam: 0,
-      feb_salary: 0, feb_exam: 0,
-      mar_salary: 0, mar_exam: 0,
-      apr_salary: 0, apr_exam: 0,
-      may_salary: 0, may_exam: 0,
-      jun_salary: 0, jun_exam: 0,
-      jul_salary: 0, jul_exam: 0,
-      aug_salary: 0, aug_exam: 0,
-      sep_salary: 0, sep_exam: 0,
-      oct_salary: 0, oct_exam: 0,
-      nov_salary: 0, nov_exam: 0,
-      dec_salary: 0, dec_exam: 0,
       miscellaneous: 0,
       grand_total: 0,
+      months: MONTHS.reduce((acc, m) => {
+        acc[m.toLowerCase()] = { salary: 0, exam: 0 };
+        return acc;
+      }, {} as Record<string, {salary: number, exam: number}>)
     };
 
     students.forEach(student => {
@@ -218,18 +198,15 @@ export default function Ledger() {
 
     payments.forEach(p => {
       const studentId = p.student_id;
-      if (!studentTotals[studentId]) return; // Should not happen if students are fetched correctly
+      if (!studentTotals[studentId]) return;
 
-      const monthIndex = MONTHS.indexOf(p.month);
-      if (monthIndex === -1) return;
-      const monthKey = MONTHS[monthIndex].toLowerCase();
+      const monthKey = p.month.toLowerCase();
 
       studentTotals[studentId].admission_fee += p.admission_fee || 0;
       studentTotals[studentId].backdue += p.backdue || 0;
       studentTotals[studentId].monthly_salary[monthKey] = (studentTotals[studentId].monthly_salary[monthKey] || 0) + (p.salary || 0);
       studentTotals[studentId].monthly_exam[monthKey] = (studentTotals[studentId].monthly_exam[monthKey] || 0) + (p.exam_fee || 0);
       studentTotals[studentId].miscellaneous += p.miscellaneous || 0;
-      // studentTotals[studentId].miscellaneous += p.miscellaneous || 0;
 
       const rowSum = (p.admission_fee || 0) + (p.backdue || 0) + (p.salary || 0) + (p.exam_fee || 0) + (p.miscellaneous || 0);
       studentTotals[studentId].grand_total += rowSum;
@@ -237,345 +214,215 @@ export default function Ledger() {
       // Update column totals
       columnTotals.admission_fee += p.admission_fee || 0;
       columnTotals.backdue += p.backdue || 0;
-      columnTotals[`${monthKey}_salary` as keyof typeof columnTotals] = (columnTotals[`${monthKey}_salary` as keyof typeof columnTotals] || 0) + (p.salary || 0);
-      columnTotals[`${monthKey}_exam` as keyof typeof columnTotals] = (columnTotals[`${monthKey}_exam` as keyof typeof columnTotals] || 0) + (p.exam_fee || 0);
       columnTotals.miscellaneous += p.miscellaneous || 0;
       columnTotals.grand_total += rowSum;
+      
+      if (columnTotals.months[monthKey]) {
+        columnTotals.months[monthKey].salary += p.salary || 0;
+        columnTotals.months[monthKey].exam += p.exam_fee || 0;
+      }
     });
 
     return { studentTotals, columnTotals };
   }, [payments, students]);
 
-  const sortedStudents = useMemo(() => {
-    let sortableStudents = [...students];
-    if (sortConfig.key) {
-      sortableStudents.sort((a, b) => {
-        let aValue: any = a[sortConfig.key as keyof Student];
-        let bValue: any = b[sortConfig.key as keyof Student];
-
-        if (sortConfig.key === 'total') {
-           aValue = totals.studentTotals[a.id]?.grand_total || 0;
-           bValue = totals.studentTotals[b.id]?.grand_total || 0;
-        } else if (sortConfig.key === 'sl_no') {
-           aValue = parseInt(a.sl_no) || 0;
-           bValue = parseInt(b.sl_no) || 0;
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    return sortableStudents;
-  }, [students, sortConfig, totals]);
-
   const chunkedStudents = useMemo(() => {
     const chunks = [];
-    for (let i = 0; i < sortedStudents.length; i += STUDENTS_PER_CARD) {
-      chunks.push(sortedStudents.slice(i, i + STUDENTS_PER_CARD));
+    for (let i = 0; i < students.length; i += STUDENTS_PER_CARD) {
+      chunks.push(students.slice(i, i + STUDENTS_PER_CARD));
     }
     return chunks;
-  }, [sortedStudents]);
+  }, [students]);
 
-  const requestSort = (key: 'sl_no' | 'name_bengali' | 'class' | 'section' | 'total') => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#1e3a5f]" size={32} /></div>;
+
+  const renderCell = (studentId: string, month: string, field: keyof Payment, value: number) => {
+    const isEditing = editingCell?.studentId === studentId && editingCell?.month === month && editingCell?.field === field;
+    const isSuccess = showSaveSuccess?.studentId === studentId && showSaveSuccess?.month === month && showSaveSuccess?.field === field;
+
+    return (
+      <td 
+        className={clsx(
+          "border border-[#ccc] text-center p-0 h-10 cursor-pointer transition-colors hover:bg-blue-50 relative",
+          value > 0 ? "text-green-600 font-medium" : "text-slate-400"
+        )}
+        onClick={() => handleCellClick(studentId, month, field, value)}
+      >
+        {isEditing ? (
+          <input
+            ref={editInputRef}
+            type="number"
+            value={inlineEditValue}
+            onChange={e => setInlineEditValue(e.target.value)}
+            onBlur={handleInlineSave}
+            onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
+            className="w-full h-full text-center bg-white outline-none border-2 border-blue-500 rounded-sm"
+          />
+        ) : (
+          <div className="flex items-center justify-center w-full h-full">
+            {value > 0 ? toBengaliNumber(value) : '—'}
+            {isSuccess && (
+              <CheckCircle2 size={12} className="text-green-500 absolute right-0.5 top-0.5" />
+            )}
+          </div>
+        )}
+      </td>
+    );
   };
-
-  const SortIcon = ({ columnKey }: { columnKey: string }) => {
-    if (sortConfig.key !== columnKey) return <ArrowUpDown size={14} className="opacity-30" />;
-    return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
-  };
-
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#2271b1]" size={32} /></div>;
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[13px] text-[#1d2327] print:bg-white">
-      {/* Top Filters and Print Button */}
-      <div className="bg-white p-4 flex flex-wrap items-end gap-4 border-b border-[#ccc] print:hidden shadow-sm">
+    <div className="min-h-screen bg-white font-['Noto_Sans_Bengali'] text-[13px] text-[#1d2327]">
+      {/* Top Filters */}
+      <div className="bg-white p-4 flex flex-wrap items-end gap-6 border-b border-[#ccc] print:hidden shadow-sm sticky top-0 z-10">
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">শ্রেণী (Class)</label>
+          <label className="block text-xs font-bold text-slate-500">শ্রেণী</label>
           <select
             value={filters.class}
             onChange={(e) => setFilters({...filters, class: e.target.value})}
-            className="wp-input text-sm py-1"
+            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-32"
           >
             {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">শাখা (Section)</label>
+          <label className="block text-xs font-bold text-slate-500">শাখা</label>
           <select
             value={filters.section}
             onChange={(e) => setFilters({...filters, section: e.target.value})}
-            className="wp-input text-sm py-1"
+            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-32"
           >
-            <option value="">সব শাখা (All)</option>
             {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">সন (Year)</label>
+          <label className="block text-xs font-bold text-slate-500">সন</label>
           <input
             type="number"
             value={filters.year}
             onChange={(e) => setFilters({...filters, year: e.target.value})}
-            className="wp-input text-sm py-1 w-24"
+            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-24"
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">কার্ড মেয়াদ (Card Date)</label>
+          <label className="block text-xs font-bold text-slate-500">কার্ড মেয়াদ</label>
           <input
             type="date"
             value={filters.cardDate}
             onChange={(e) => setFilters({...filters, cardDate: e.target.value})}
-            className="wp-input text-sm py-1 w-36"
+            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-36"
           />
         </div>
         <div className="flex-1"></div>
         <button
           onClick={() => window.print()}
-          className="wp-button text-sm py-1.5 flex items-center gap-2 bg-white text-[#2271b1] border border-[#2271b1] hover:bg-[#f0f6fb]"
+          className="bg-[#1e3a5f] text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-[#162a45] transition-colors"
         >
-          <Printer size={16} />
-          প্রিন্ট (Print)
+          <Printer size={18} /> প্রিন্ট
         </button>
       </div>
 
       {/* Ledger Cards */}
-      <div className="p-4 space-y-8 print:p-0 print:space-y-0">
+      <div className="p-6 space-y-12 print:p-0 print:space-y-0">
         {chunkedStudents.length === 0 ? (
-          <div className="text-center py-20 text-slate-500">কোনো ছাত্র পাওয়া যায়নি।</div>
+          <div className="text-center py-20 text-slate-400 text-lg">কোনো তথ্য পাওয়া যায়নি।</div>
         ) : (
           chunkedStudents.map((studentChunk, cardIndex) => (
-            <div key={cardIndex} className="wp-card rounded-lg overflow-hidden border border-[#ccc] print:border-none print:rounded-none print:shadow-none print:mb-8 page-break-after-always">
+            <div key={cardIndex} className="bg-white border border-[#ccc] shadow-sm print:border-none print:shadow-none page-break-after-always">
               {/* Card Header */}
-              <div className="bg-[#1e3a5f] text-white p-4 text-center leading-tight">
-                <h1 className="text-xl font-bold">নারিন্দা আইডিয়াল স্কুল</h1>
-                <p className="text-sm">শ্রেণী: {filters.class} শাখা: {filters.section}</p>
-                <p className="text-xs">সন: {toBengaliNumber(filters.year)} কার্ড মেয়াদ: {toBengaliNumber(new Date(filters.cardDate).toLocaleDateString('bn-BD'))}</p>
+              <div className="bg-[#1e3a5f] text-white p-4 text-center border-b border-[#ccc]">
+                <h1 className="text-xl font-bold mb-1">নারিন্দা আইডিয়াল স্কুল</h1>
+                <div className="flex justify-center gap-8 text-sm">
+                  <span>শ্রেণী: {filters.class}</span>
+                  <span>শাখা: {filters.section}</span>
+                  <span>সন: {toBengaliNumber(filters.year)}</span>
+                  <span>কার্ড মেয়াদ: {toBengaliNumber(new Date(filters.cardDate).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' }))}</span>
+                </div>
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
+              <div className="overflow-x-auto w-full">
+                <table className="min-w-max w-full border-collapse table-fixed">
                   <thead>
-                    <tr className="bg-[#f9f9f9] text-left font-bold text-[#1d2327]">
-                      <th className="p-2 border border-[#ccc] w-10 text-center">ক্র</th><th className="p-2 border border-[#ccc] w-24 text-center">রোল</th><th className="p-2 border border-[#ccc] w-48 text-left">ছাত্রের নাম</th><th colSpan={3} className="p-2 border border-[#ccc] text-center">ভর্তি ও বকেয়া</th>{BENGALI_MONTHS_SHORT.map((month, idx) => (
-                        SPECIAL_MONTHS.includes(MONTHS[idx]) ? (
-                          <th colSpan={2} key={month} className="p-2 border border-[#ccc] text-center">{month}</th>
-                        ) : (
-                          <th key={month} className="p-2 border border-[#ccc] text-center">{month}</th>
-                        )
-                      ))}<th className="p-2 border border-[#ccc] w-20 text-center">অন্যান্য</th><th className="p-2 border border-[#ccc] w-24 text-center">মোট আয়</th>
+                    <tr className="bg-[#1e3a5f] text-white text-[11px]">
+                      <th className="border border-white/20 w-8 py-2" rowSpan={2}>ক্র</th>
+                      <th className="border border-white/20 w-12 py-2" rowSpan={2}>রোল</th>
+                      <th className="border border-white/20 w-40 py-2" rowSpan={2}>ছাত্রের নাম</th>
+                      <th className="border border-white/20 py-1" colSpan={3}>ভর্তি ও বকেয়া</th>
+                      {BENGALI_MONTHS_SHORT.map((month, idx) => (
+                        <th 
+                          key={month} 
+                          className="border border-white/20 py-1" 
+                          colSpan={SPECIAL_MONTHS.includes(MONTHS[idx]) ? 2 : 1}
+                        >
+                          {month}
+                        </th>
+                      ))}
+                      <th className="border border-white/20 w-16 py-2" rowSpan={2}>অন্যান্য</th>
+                      <th className="border border-white/20 w-20 py-2" rowSpan={2}>মোট আয়</th>
                     </tr>
-                    <tr className="bg-[#f9f9f9] text-left font-bold text-[#1d2327]">
-                      <th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc] text-center text-xs">ভর্তি</th><th className="p-1 border border-[#ccc] text-center text-xs">জমা</th><th className="p-1 border border-[#ccc] text-center text-xs">বকেয়া</th>{BENGALI_MONTHS_SHORT.map((month, idx) => (
-                        SPECIAL_MONTHS.includes(MONTHS[idx]) ? (
-                          <React.Fragment key={month}>
-                            <th className="p-1 border border-[#ccc] text-center text-xs">বেতন</th>
-                            <th className="p-1 border border-[#ccc] text-center text-xs">পরীক্ষা</th>
+                    <tr className="bg-[#1e3a5f] text-white text-[10px]">
+                      <th className="border border-white/20 py-1 w-14">ভর্তি</th>
+                      <th className="border border-white/20 py-1 w-14">জমা</th>
+                      <th className="border border-white/20 py-1 w-14">বকেয়া</th>
+                      {MONTHS.map((m, idx) => (
+                        SPECIAL_MONTHS.includes(m) ? (
+                          <React.Fragment key={m}>
+                            <th className="border border-white/20 py-1 w-14">বেতন</th>
+                            <th className="border border-white/20 py-1 w-14">পরীক্ষা</th>
                           </React.Fragment>
                         ) : (
-                          <th key={month} className="p-1 border border-[#ccc] text-center text-xs">বেতন/জমা</th>
+                          <th key={m} className="border border-white/20 py-1 w-14">বেতন</th>
                         )
-                      ))}<th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc]"></th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {studentChunk.map((student, studentIndex) => {
-                      const studentPaymentTotals = totals.studentTotals[student.id];
-                      const admissionFee = studentPaymentTotals?.admission_fee || 0;
-                      const backdue = studentPaymentTotals?.backdue || 0;
-                      const totalPaid = studentPaymentTotals?.grand_total || 0;
-
+                    {studentChunk.map((student, idx) => {
+                      const stTotals = totals.studentTotals[student.id];
                       return (
-                        <tr key={student.id} className={clsx(
-                          "border-b border-[#eee]",
-                          studentIndex % 2 === 0 ? "bg-white" : "bg-[#f9f9f9]"
-                        )}>
-                          <td className="p-2 border border-[#ccc] text-center text-slate-500">{toBengaliNumber(cardIndex * STUDENTS_PER_CARD + studentIndex + 1)}</td>
-                          <td className="p-2 border border-[#ccc] text-center text-slate-700">{toBengaliNumber(student.sl_no)}</td>
-                          <td className="p-2 border border-[#ccc] text-left font-bold text-slate-800">{student.name_bengali}</td><td
-                            className={clsx("p-2 border border-[#ccc] text-center", admissionFee > 0 ? "text-green-600" : "text-slate-400")}
-                            onClick={() => handleCellClick(student.id, MONTHS[0], 'admission_fee', admissionFee)}
-                          >
-                            {editingCell?.studentId === student.id && editingCell?.month === MONTHS[0] && editingCell?.field === 'admission_fee' ? (
-                              <input
-                                ref={editInputRef}
-                                type="number"
-                                value={inlineEditValue}
-                                onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
-                                onBlur={handleInlineSave}
-                                onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-                                className="w-full text-center wp-input p-0 border-none focus:ring-0"
-                              />
-                            ) : (
-                              <span className="relative group">
-                                {admissionFee > 0 ? toBengaliNumber(admissionFee) : '—'}
-                                {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.month === MONTHS[0] && editingCell?.field === 'admission_fee' && (
-                                  <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
-                                )}
-                              </span>
-                            )}
-                          </td><td className="p-2 border border-[#ccc] text-center text-slate-400">—</td><td
-                            className={clsx("p-2 border border-[#ccc] text-center", backdue > 0 ? "text-red-600" : "text-slate-400")}
-                            onClick={() => handleCellClick(student.id, MONTHS[0], 'backdue', backdue)}
-                          >
-                            {editingCell?.studentId === student.id && editingCell?.month === MONTHS[0] && editingCell?.field === 'backdue' ? (
-                              <input
-                                ref={editInputRef}
-                                type="number"
-                                value={inlineEditValue}
-                                onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
-                                onBlur={handleInlineSave}
-                                onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-                                className="w-full text-center wp-input p-0 border-none focus:ring-0"
-                              />
-                            ) : (
-                              <span className="relative group">
-                                {backdue > 0 ? toBengaliNumber(backdue) : '—'}
-                                {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.month === MONTHS[0] && editingCell?.field === 'backdue' && (
-                                  <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
-                                )}
-                              </span>
-                            )}
-                          </td>{MONTHS.map((month, idx) => {
-                            const monthKey = month.toLowerCase();
-                            const salary = studentPaymentTotals?.monthly_salary[monthKey] || 0;
-                            const exam = studentPaymentTotals?.monthly_exam[monthKey] || 0;
+                        <tr key={student.id} className={idx % 2 === 0 ? "bg-white" : "bg-[#f9f9f9]"}>
+                          <td className="border border-[#ccc] text-center py-2">{toBengaliNumber(idx + 1)}</td>
+                          <td className="border border-[#ccc] text-center py-2">{toBengaliNumber(student.sl_no)}</td>
+                          <td className="border border-[#ccc] px-2 py-2 font-bold text-left truncate">{student.name_bengali}</td>
+                          
+                          {/* Admission & Arrears (3 sub-cols) */}
+                          <td className="border border-[#ccc] text-center text-slate-300">—</td>
+                          {renderCell(student.id, MONTHS[0], 'admission_fee', stTotals?.admission_fee || 0)}
+                          {renderCell(student.id, MONTHS[0], 'backdue', stTotals?.backdue || 0)}
 
-                            if (SPECIAL_MONTHS.includes(month)) {
-                              return (
-                                <React.Fragment key={month}>
-                                  <td
-                                    className={clsx("p-2 border border-[#ccc] text-center", salary > 0 ? "text-green-600" : "text-slate-400")}
-                                    onClick={() => handleCellClick(student.id, month, 'salary', salary)}
-                                  >
-                                    {editingCell?.studentId === student.id && editingCell?.month === month && editingCell?.field === 'salary' ? (
-                                      <input
-                                        ref={editInputRef}
-                                        type="number"
-                                        value={inlineEditValue}
-                                        onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
-                                        onBlur={handleInlineSave}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-                                        className="w-full text-center wp-input p-0 border-none focus:ring-0"
-                                      />
-                                    ) : (
-                                      <span className="relative group">
-                                        {salary > 0 ? toBengaliNumber(salary) : '—'}
-                                        {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.month === month && editingCell?.field === 'salary' && (
-                                          <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
-                                        )}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td
-                                    className={clsx("p-2 border border-[#ccc] text-center", exam > 0 ? "text-green-600" : "text-slate-400")}
-                                    onClick={() => handleCellClick(student.id, month, 'exam_fee', exam)}
-                                  >
-                                    {editingCell?.studentId === student.id && editingCell?.month === month && editingCell?.field === 'exam_fee' ? (
-                                      <input
-                                        ref={editInputRef}
-                                        type="number"
-                                        value={inlineEditValue}
-                                        onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
-                                        onBlur={handleInlineSave}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-                                        className="w-full text-center wp-input p-0 border-none focus:ring-0"
-                                      />
-                                    ) : (
-                                      <span className="relative group">
-                                        {exam > 0 ? toBengaliNumber(exam) : '—'}
-                                        {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.month === month && editingCell?.field === 'exam_fee' && (
-                                          <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
-                                        )}
-                                      </span>
-                                    )}
-                                  </td>
-                                </React.Fragment>
-                              );
-                            } else {
-                              return (
-                                <td
-                                  key={month}
-                                  className={clsx("p-2 border border-[#ccc] text-center", salary > 0 ? "text-green-600" : "text-slate-400")}
-                                  onClick={() => handleCellClick(student.id, month, 'salary', salary)}
-                                >
-                                  {editingCell?.studentId === student.id && editingCell?.month === month && editingCell?.field === 'salary' ? (
-                                    <input
-                                      ref={editInputRef}
-                                      type="number"
-                                      value={inlineEditValue}
-                                      onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
-                                      onBlur={handleInlineSave}
-                                      onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-                                      className="w-full text-center wp-input p-0 border-none focus:ring-0"
-                                    />
-                                  ) : (
-                                    <span className="relative group">
-                                      {salary > 0 ? toBengaliNumber(salary) : '—'}
-                                      {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.month === month && editingCell?.field === 'salary' && (
-                                        <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
-                                      )}
-                                    </span>
-                                  )}
-                                </td>
-                              );
-                            }
-                          })}<td
-                            className={clsx("p-2 border border-[#ccc] text-center", studentPaymentTotals?.miscellaneous > 0 ? "text-green-600" : "text-slate-400")}
-                            onClick={() => handleCellClick(student.id, MONTHS[0], 'miscellaneous', studentPaymentTotals?.miscellaneous || 0)}
-                          >
-                            {editingCell?.studentId === student.id && editingCell?.field === 'miscellaneous' ? (
-                              <input
-                                ref={editInputRef}
-                                type="number"
-                                value={inlineEditValue}
-                                onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
-                                onBlur={handleInlineSave}
-                                onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-                                className="w-full text-center wp-input p-0 border-none focus:ring-0"
-                              />
-                            ) : (
-                              <span className="relative group">
-                                {studentPaymentTotals?.miscellaneous > 0 ? toBengaliNumber(studentPaymentTotals.miscellaneous) : '—'}
-                                {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.field === 'miscellaneous' && (
-                                  <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
-                                )}
-                              </span>
-                            )}
-                          </td><td className="p-2 border border-[#ccc] text-center font-bold text-[#1e3a5f]">{toBengaliNumber(totalPaid)}</td>
+                          {/* Months */}
+                          {MONTHS.map((m) => (
+                            <React.Fragment key={m}>
+                              {renderCell(student.id, m, 'salary', stTotals?.monthly_salary[m.toLowerCase()] || 0)}
+                              {SPECIAL_MONTHS.includes(m) && renderCell(student.id, m, 'exam_fee', stTotals?.monthly_exam[m.toLowerCase()] || 0)}
+                            </React.Fragment>
+                          ))}
+
+                          {/* Others & Total */}
+                          {renderCell(student.id, MONTHS[0], 'miscellaneous', stTotals?.miscellaneous || 0)}
+                          <td className="border border-[#ccc] text-center font-bold text-[#1e3a5f] bg-blue-50/30">
+                            {toBengaliNumber(stTotals?.grand_total || 0)}
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot>
-                    {/* Card Footer - Grand Total Row */}
-                    <tr className="bg-[#1e3a5f] text-white font-bold">
-                      <td colSpan={3} className="p-3 border border-white/10 text-right">সর্বমোট (Grand Total)</td><td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.admission_fee)}</td><td className="p-3 border border-white/10 text-center">—</td><td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.backdue)}</td>{MONTHS.map((month, idx) => {
-                        const monthKey = month.toLowerCase();
-                        if (SPECIAL_MONTHS.includes(month)) {
-                          return (
-                            <React.Fragment key={month}>
-                              <td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals[`${monthKey}_salary` as keyof typeof totals.columnTotals])}</td>
-                              <td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals[`${monthKey}_exam` as keyof typeof totals.columnTotals])}</td>
-                            </React.Fragment>
-                          );
-                        } else {
-                          return (
-                            <td key={month} className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals[`${monthKey}_salary` as keyof typeof totals.columnTotals])}</td>
-                          );
-                        }
-                      })}<td className="p-3 border border-white/10 text-center">—</td><td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
+                    <tr className="bg-[#1e3a5f] text-white font-bold text-[12px]">
+                      <td colSpan={3} className="border border-white/20 p-2 text-right">সর্বমোট (Grand Total)</td>
+                      <td className="border border-white/20 text-center">—</td>
+                      <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.admission_fee)}</td>
+                      <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.backdue)}</td>
+                      {MONTHS.map(m => (
+                        <React.Fragment key={m}>
+                          <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].salary)}</td>
+                          {SPECIAL_MONTHS.includes(m) && (
+                            <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].exam)}</td>
+                          )}
+                        </React.Fragment>
+                      ))}
+                      <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.miscellaneous)}</td>
+                      <td className="border border-white/20 text-center bg-[#162a45]">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -588,11 +435,52 @@ export default function Ledger() {
       {/* Add Student FAB */}
       <button
         onClick={handleAddStudent}
-        className="fixed bottom-6 right-6 wp-button rounded-full w-14 h-14 flex items-center justify-center shadow-lg print:hidden"
-        title="Add New Student"
+        className="fixed bottom-8 right-8 bg-[#1e3a5f] text-white rounded-full w-14 h-14 flex items-center justify-center shadow-2xl hover:scale-110 transition-transform print:hidden z-20"
+        title="নতুন ছাত্র যোগ করুন"
       >
-        <Plus size={24} />
+        <Plus size={28} />
       </button>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 5mm;
+          }
+          body {
+            background: white;
+            padding: 0;
+            margin: 0;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .page-break-after-always {
+            page-break-after: always;
+            margin: 0;
+            border: none;
+            box-shadow: none;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th, td {
+            border: 1px solid #000 !important;
+            font-size: 9px;
+            padding: 2px !important;
+          }
+          .bg-[#1e3a5f] {
+            background-color: #1e3a5f !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .text-white {
+            color: white !important;
+          }
+        }
+      `}} />
     </div>
   );
 }

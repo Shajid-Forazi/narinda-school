@@ -330,82 +330,84 @@ export default function ResultProcessing() {
             </div>
           </div>
 
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-[#f6f7f7] text-left text-[10px] font-bold text-slate-500 uppercase">
-                <th className="p-3 border-b border-[#c3c4c7]">Subject</th>
-                <th className="p-3 border-b border-[#c3c4c7] text-center">Tutorial</th>
-                <th className="p-3 border-b border-[#c3c4c7] text-center">CQ</th>
-                <th className="p-3 border-b border-[#c3c4c7] text-center">MCQ</th>
-                <th className="p-3 border-b border-[#c3c4c7] text-center bg-[#f0f0f1]">Total</th>
-                <th className="p-3 border-b border-[#c3c4c7] text-center">Grade</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#c3c4c7]">
-              {marks.map((mark, idx) => {
-                const subject = subjects.find(s => s.name === mark.subject);
-                if (!subject) return null;
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-max w-full border-collapse">
+              <thead>
+                <tr className="bg-[#f6f7f7] text-left text-[10px] font-bold text-slate-500 uppercase">
+                  <th className="p-3 border-b border-[#c3c4c7]">Subject</th>
+                  <th className="p-3 border-b border-[#c3c4c7] text-center">Tutorial</th>
+                  <th className="p-3 border-b border-[#c3c4c7] text-center">CQ</th>
+                  <th className="p-3 border-b border-[#c3c4c7] text-center">MCQ</th>
+                  <th className="p-3 border-b border-[#c3c4c7] text-center bg-[#f0f0f1]">Total</th>
+                  <th className="p-3 border-b border-[#c3c4c7] text-center">Grade</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#c3c4c7]">
+                {marks.map((mark, idx) => {
+                  const subject = subjects.find(s => s.name === mark.subject);
+                  if (!subject) return null;
 
-                return (
-                  <tr key={mark.subject} className="hover:bg-[#f6f7f7]">
-                    <td className="p-3 font-bold text-sm">
-                      {mark.subject}
-                      <span className="text-[8px] text-slate-400 block">Max: {subject.total_marks}</span>
-                    </td>
-                    <td className="p-3">
-                      {subject.has_tutorial ? (
-                        <input 
-                          type="number" 
-                          value={mark.tutorial_marks}
-                          onChange={(e) => handleMarkChange(idx, 'tutorial_marks', e.target.value)}
-                          className="wp-input w-16 mx-auto block text-center text-sm py-1"
-                        />
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {subject.has_cq ? (
-                        <input 
-                          type="number" 
-                          placeholder="CQ"
-                          value={mark.sub_marks}
-                          onChange={(e) => handleMarkChange(idx, 'sub_marks', e.target.value)}
-                          className="wp-input w-16 mx-auto block text-center text-sm py-1"
-                        />
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {subject.has_mcq ? (
-                        <input 
-                          type="number" 
-                          placeholder="MCQ"
-                          value={mark.obj_marks}
-                          onChange={(e) => handleMarkChange(idx, 'obj_marks', e.target.value)}
-                          className="wp-input w-16 mx-auto block text-center text-sm py-1"
-                        />
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
-                    <td className="p-3 text-center font-bold text-sm bg-[#f0f0f1]">
-                      {toBengaliNumber(mark.total_marks || 0)}
-                    </td>
-                    <td className="p-3 text-center">
-                      <span className={clsx(
-                        "font-bold text-sm",
-                        mark.grade === 'F' ? "text-red-600" : "text-[#2271b1]"
-                      )}>
-                        {mark.grade}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  return (
+                    <tr key={mark.subject} className="hover:bg-[#f6f7f7]">
+                      <td className="p-3 font-bold text-sm">
+                        {mark.subject}
+                        <span className="text-[8px] text-slate-400 block">Max: {subject.total_marks}</span>
+                      </td>
+                      <td className="p-3">
+                        {subject.has_tutorial ? (
+                          <input 
+                            type="number" 
+                            value={mark.tutorial_marks}
+                            onChange={(e) => handleMarkChange(idx, 'tutorial_marks', e.target.value)}
+                            className="wp-input w-16 mx-auto block text-center text-sm py-1"
+                          />
+                        ) : (
+                          <div className="text-center text-slate-300">-</div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {subject.has_cq ? (
+                          <input 
+                            type="number" 
+                            placeholder="CQ"
+                            value={mark.sub_marks}
+                            onChange={(e) => handleMarkChange(idx, 'sub_marks', e.target.value)}
+                            className="wp-input w-16 mx-auto block text-center text-sm py-1"
+                          />
+                        ) : (
+                          <div className="text-center text-slate-300">-</div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {subject.has_mcq ? (
+                          <input 
+                            type="number" 
+                            placeholder="MCQ"
+                            value={mark.obj_marks}
+                            onChange={(e) => handleMarkChange(idx, 'obj_marks', e.target.value)}
+                            className="wp-input w-16 mx-auto block text-center text-sm py-1"
+                          />
+                        ) : (
+                          <div className="text-center text-slate-300">-</div>
+                        )}
+                      </td>
+                      <td className="p-3 text-center font-bold text-sm bg-[#f0f0f1]">
+                        {toBengaliNumber(mark.total_marks || 0)}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={clsx(
+                          "font-bold text-sm",
+                          mark.grade === 'F' ? "text-red-600" : "text-[#2271b1]"
+                        )}>
+                          {mark.grade}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -511,56 +513,58 @@ export default function ResultProcessing() {
                 
                 {/* Subject List Table */}
                 <div className="border border-[#c3c4c7] rounded overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7] text-xs font-bold text-slate-500 uppercase">
-                                <th className="p-2 w-12 text-center">SL</th>
-                                <th className="p-2">Subject Name</th>
-                                <th className="p-2 w-20 text-center">Total</th>
-                                <th className="p-2 w-20 text-center">Tutorial</th>
-                                <th className="p-2 w-20 text-center">MCQ</th>
-                                <th className="p-2 w-20 text-center">CQ</th>
-                                <th className="p-2 w-20 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#c3c4c7]">
-                            {subjects.map((s, i) => (
-                                <tr key={s.id} className={clsx("hover:bg-[#f6f7f7]", editingSubject?.id === s.id && "bg-blue-50")}>
-                                    <td className="p-2 text-center text-sm">{toBengaliNumber(i + 1)}</td>
-                                    <td className="p-2 text-sm font-bold">{s.name}</td>
-                                    <td className="p-2 text-center text-sm">{s.total_marks}</td>
-                                    <td className="p-2 text-center">
-                                        {s.has_tutorial ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
-                                    </td>
-                                    <td className="p-2 text-center">
-                                        {s.has_mcq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
-                                    </td>
-                                    <td className="p-2 text-center">
-                                        {s.has_cq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
-                                    </td>
-                                    <td className="p-2 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button 
-                                                onClick={() => {
-                                                    setEditingSubject(s);
-                                                    setSubjectForm(s);
-                                                }}
-                                                className="text-slate-400 hover:text-[#2271b1]"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteSubject(s.id)}
-                                                className="text-slate-400 hover:text-red-600"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
+                    <div className="overflow-x-auto w-full">
+                        <table className="min-w-max w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7] text-xs font-bold text-slate-500 uppercase">
+                                    <th className="p-2 w-12 text-center">SL</th>
+                                    <th className="p-2">Subject Name</th>
+                                    <th className="p-2 w-20 text-center">Total</th>
+                                    <th className="p-2 w-20 text-center">Tutorial</th>
+                                    <th className="p-2 w-20 text-center">MCQ</th>
+                                    <th className="p-2 w-20 text-center">CQ</th>
+                                    <th className="p-2 w-20 text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-[#c3c4c7]">
+                                {subjects.map((s, i) => (
+                                    <tr key={s.id} className={clsx("hover:bg-[#f6f7f7]", editingSubject?.id === s.id && "bg-blue-50")}>
+                                        <td className="p-2 text-center text-sm">{toBengaliNumber(i + 1)}</td>
+                                        <td className="p-2 text-sm font-bold">{s.name}</td>
+                                        <td className="p-2 text-center text-sm">{s.total_marks}</td>
+                                        <td className="p-2 text-center">
+                                            {s.has_tutorial ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                                        </td>
+                                        <td className="p-2 text-center">
+                                            {s.has_mcq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                                        </td>
+                                        <td className="p-2 text-center">
+                                            {s.has_cq ? <Check size={16} className="text-green-600 mx-auto" /> : <X size={16} className="text-slate-300 mx-auto" />}
+                                        </td>
+                                        <td className="p-2 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingSubject(s);
+                                                        setSubjectForm(s);
+                                                    }}
+                                                    className="text-slate-400 hover:text-[#2271b1]"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteSubject(s.id)}
+                                                    className="text-slate-400 hover:text-red-600"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
