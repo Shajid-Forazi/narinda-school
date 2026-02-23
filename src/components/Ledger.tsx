@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { supabase } from '../lib/supabase';
-import { Student, Payment, CLASSES, MONTHS } from '../types';
-import { Printer, Loader2 } from 'lucide-react';
+import { Student, Payment, CLASSES, MONTHS, SECTIONS } from '../types';
+import { Printer, Loader2, X, Save } from 'lucide-react';
 import { toBengaliNumber, formatCurrency } from '../utils';
 
 const BENGALI_MONTHS = [
@@ -14,19 +14,35 @@ export default function Ledger() {
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [filters, setFilters] = useState({
     class: 'One',
+    section: 'A',
     year: new Date().getFullYear().toString(),
+  });
+
+  // Modal state
+  const [selectedCell, setSelectedCell] = useState<{studentId: string, month: string} | null>(null);
+  const [editValues, setEditValues] = useState({
+    admission_fee: 0,
+    backdue: 0,
+    salary: 0,
+    exam_fee: 0
   });
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: stdData } = await supabase
+    let query = supabase
       .from('students')
       .select('*')
       .eq('class', filters.class)
       .order('sl_no', { ascending: true });
+      
+    if (filters.section) {
+      query = query.eq('section', filters.section);
+    }
+
+    const { data: stdData } = await query;
     
     const { data: payData } = await supabase
       .from('payments')
@@ -42,22 +58,26 @@ export default function Ledger() {
     fetchData();
   }, [filters]);
 
-  const handleUpsert = async (studentId: string, month: string, field: keyof Payment, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    const existing = payments.find(p => p.student_id === studentId && p.month === month && p.year === filters.year);
-    
-    const key = `${studentId}-${month}`;
-    setSaving(key);
+  const handleCellClick = (studentId: string, month: string) => {
+    const payment = payments.find(p => p.student_id === studentId && p.month === month && p.year === filters.year);
+    setEditValues({
+      admission_fee: payment?.admission_fee || 0,
+      backdue: payment?.backdue || 0,
+      salary: payment?.salary || 0,
+      exam_fee: payment?.exam_fee || 0
+    });
+    setSelectedCell({ studentId, month });
+  };
+
+  const handleSaveModal = async () => {
+    if (!selectedCell) return;
+    setSaving(true);
 
     const payload = {
-      student_id: studentId,
+      student_id: selectedCell.studentId,
       year: filters.year,
-      month,
-      admission_fee: existing?.admission_fee || 0,
-      backdue: existing?.backdue || 0,
-      salary: existing?.salary || 0,
-      exam_fee: existing?.exam_fee || 0,
-      [field]: numValue,
+      month: selectedCell.month,
+      ...editValues
     };
 
     const { data, error } = await supabase
@@ -67,11 +87,12 @@ export default function Ledger() {
 
     if (!error && data) {
       setPayments(prev => {
-        const other = prev.filter(p => !(p.student_id === studentId && p.month === month && p.year === filters.year));
+        const other = prev.filter(p => !(p.student_id === selectedCell.studentId && p.month === selectedCell.month && p.year === filters.year));
         return [...other, data[0]];
       });
+      setSelectedCell(null);
     }
-    setSaving(null);
+    setSaving(false);
   };
 
   const totals = useMemo(() => {
@@ -89,189 +110,210 @@ export default function Ledger() {
     return { studentTotals, monthTotals, grandTotal };
   }, [payments]);
 
-  const studentChunks = useMemo(() => {
-    const chunks = [];
-    for (let i = 0; i < students.length; i += 10) {
-      chunks.push(students.slice(i, i + 10));
-    }
-    return chunks;
-  }, [students]);
-
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#2271b1]" size={32} /></div>;
 
   return (
     <div className="space-y-6">
-      <div className="wp-card p-4 rounded flex items-end gap-4 print:hidden">
+      {/* Header / Filters */}
+      <div className="bg-[#1e3a5f] p-4 rounded-lg flex flex-wrap items-end gap-4 print:hidden text-white shadow-md">
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-500">শ্রেণী (Class)</label>
+          <label className="text-xs font-bold opacity-80">শ্রেণী (Class)</label>
           <select 
             value={filters.class}
             onChange={(e) => setFilters({...filters, class: e.target.value})}
-            className="wp-input text-sm py-1"
+            className="wp-input text-sm py-1 text-black bg-white/90 border-none"
           >
             {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-500">বছর (Year)</label>
+          <label className="text-xs font-bold opacity-80">শাখা (Section)</label>
+          <select 
+            value={filters.section}
+            onChange={(e) => setFilters({...filters, section: e.target.value})}
+            className="wp-input text-sm py-1 text-black bg-white/90 border-none"
+          >
+            {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-bold opacity-80">সন (Year)</label>
           <input 
             type="text" 
             value={filters.year}
             onChange={(e) => setFilters({...filters, year: e.target.value})}
-            className="wp-input text-sm py-1 w-24"
+            className="wp-input text-sm py-1 w-24 text-black bg-white/90 border-none"
           />
         </div>
+        <div className="flex-1"></div>
         <button 
           onClick={() => window.print()}
-          className="wp-button py-1 text-sm flex items-center gap-2"
+          className="bg-white/10 hover:bg-white/20 text-white py-1.5 px-4 rounded text-sm flex items-center gap-2 transition-colors border border-white/20"
         >
           <Printer size={16} />
-          লেজার প্রিন্ট করুন (Print Ledger)
+          Print Ledger
         </button>
       </div>
 
-      <div className="print:w-full">
-        {studentChunks.length === 0 ? (
-          <div className="text-center p-8 text-slate-500">No students found for this class.</div>
-        ) : (
-          studentChunks.map((chunk, cardIndex) => (
-            <div 
-              key={cardIndex} 
-              className="bg-white p-4 mb-8 print:mb-0 print:p-0 print:w-full print:h-screen print:break-after-page shadow-sm border border-slate-200 print:shadow-none print:border-none"
-            >
-              {/* Card Header */}
-              <div className="mb-4 relative border-b-2 border-black pb-2">
-                <h1 className="text-xl font-bold text-center">নরিন্দা আইডিয়াল স্কুল এন্ড কলেজ</h1>
-                <div className="text-center text-xs font-bold mt-1 flex justify-center gap-4">
-                  <span>শ্রেণী: {filters.class}</span>
-                  <span>|</span>
-                  <span>সাল: {toBengaliNumber(filters.year)}</span>
+      {/* Main Table Container */}
+      <div className="bg-white rounded-lg shadow overflow-hidden print:shadow-none">
+        <div className="hidden print:block text-center mb-6">
+          <h1 className="text-2xl font-bold text-[#1e3a5f]">নরিন্দা আইডিয়াল স্কুল এন্ড কলেজ</h1>
+          <p className="text-sm font-bold mt-1">শ্রেণী: {filters.class} | শাখা: {filters.section} | বছর: {toBengaliNumber(filters.year)}</p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm print:text-xs min-w-[1000px]">
+            <thead>
+              <tr className="bg-[#1e3a5f] text-white text-center">
+                <th className="p-3 border border-white/10 w-12">ক্র</th>
+                <th className="p-3 border border-white/10 text-left w-64">ছাত্রের নাম</th>
+                <th className="p-3 border border-white/10 w-24">ক্লাস</th>
+                {BENGALI_MONTHS.map((m, i) => (
+                  <th key={i} className="p-3 border border-white/10 w-20">{m}</th>
+                ))}
+                <th className="p-3 border border-white/10 w-24 bg-[#162c46]">মোট</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.length === 0 ? (
+                <tr><td colSpan={16} className="p-8 text-center text-slate-400">No students found</td></tr>
+              ) : (
+                students.map((student, idx) => (
+                  <tr key={student.id} className="hover:bg-blue-50 transition-colors group border-b border-slate-100">
+                    <td className="p-2 text-center border-r border-slate-100 font-medium text-slate-500">
+                      {toBengaliNumber(student.sl_no)}
+                    </td>
+                    <td className="p-2 border-r border-slate-100">
+                      <div className="font-bold text-slate-800 text-base">{student.name_bengali}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">
+                        Class: {student.class} | Roll: {toBengaliNumber(student.sl_no)}
+                      </div>
+                    </td>
+                    <td className="p-2 text-center border-r border-slate-100 text-xs text-slate-500">
+                      {student.class} <br/> ({student.section})
+                    </td>
+                    {MONTHS.map((month, mIdx) => {
+                      const payment = payments.find(p => p.student_id === student.id && p.month === month && p.year === filters.year);
+                      const total = (payment?.admission_fee || 0) + (payment?.backdue || 0) + (payment?.salary || 0) + (payment?.exam_fee || 0);
+                      
+                      return (
+                        <td 
+                          key={month} 
+                          onClick={() => handleCellClick(student.id, month)}
+                          className="p-2 text-center border-r border-slate-100 cursor-pointer hover:bg-blue-100 transition-colors print:cursor-default"
+                        >
+                          {total > 0 ? (
+                            <span className="font-bold text-green-600 text-base">{toBengaliNumber(total)}</span>
+                          ) : (
+                            <span className="text-slate-300 font-bold">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="p-2 text-center font-bold text-[#1e3a5f] bg-slate-50">
+                      {toBengaliNumber(totals.studentTotals[student.id] || 0)}
+                    </td>
+                  </tr>
+                ))
+              )}
+              
+              {/* Grand Total Row */}
+              <tr className="bg-[#1e3a5f] text-white font-bold print:bg-[#1e3a5f] print:text-white">
+                <td colSpan={3} className="p-3 text-right border-r border-white/10">সর্বমোট (Grand Total)</td>
+                {MONTHS.map(m => (
+                  <td key={m} className="p-3 text-center border-r border-white/10">
+                    {toBengaliNumber(totals.monthTotals[m] || 0)}
+                  </td>
+                ))}
+                <td className="p-3 text-center bg-[#162c46]">
+                  {toBengaliNumber(totals.grandTotal)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Edit Modal */}
+      {selectedCell && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="bg-[#1e3a5f] p-4 flex justify-between items-center text-white">
+              <h3 className="font-bold">Update Payment</h3>
+              <button 
+                onClick={() => setSelectedCell(null)}
+                className="hover:bg-white/20 p-1 rounded-full transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="text-center mb-4">
+                <p className="text-sm text-slate-500">Student: <span className="font-bold text-slate-800">{students.find(s => s.id === selectedCell.studentId)?.name_bengali}</span></p>
+                <p className="text-sm text-slate-500">Month: <span className="font-bold text-slate-800">{selectedCell.month}</span></p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-600">ভর্তি ফি (Admission)</label>
+                  <input 
+                    type="number" 
+                    value={editValues.admission_fee}
+                    onChange={e => setEditValues({...editValues, admission_fee: parseFloat(e.target.value) || 0})}
+                    className="wp-input w-24 text-right"
+                  />
                 </div>
-                <div className="absolute right-0 top-0 border border-black px-2 py-0.5 text-[10px] font-bold">
-                  কার্ড নং: {toBengaliNumber(cardIndex + 1)}
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-600">বকেয়া (Backdue)</label>
+                  <input 
+                    type="number" 
+                    value={editValues.backdue}
+                    onChange={e => setEditValues({...editValues, backdue: parseFloat(e.target.value) || 0})}
+                    className="wp-input w-24 text-right"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-600">বেতন (Salary)</label>
+                  <input 
+                    type="number" 
+                    value={editValues.salary}
+                    onChange={e => setEditValues({...editValues, salary: parseFloat(e.target.value) || 0})}
+                    className="wp-input w-24 text-right"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-600">পরীক্ষা ফি (Exam)</label>
+                  <input 
+                    type="number" 
+                    value={editValues.exam_fee}
+                    onChange={e => setEditValues({...editValues, exam_fee: parseFloat(e.target.value) || 0})}
+                    className="wp-input w-24 text-right"
+                  />
                 </div>
               </div>
 
-              {/* Table */}
-              <table className="w-full border-collapse border border-black text-[9px]">
-                <thead>
-                  <tr className="bg-slate-50 print:bg-white text-center">
-                    <th rowSpan={2} className="border border-black w-8 p-1">ক্রমিক নং</th>
-                    <th rowSpan={2} className="border border-black w-32 p-1">ছাত্রের নাম ও পিতার নাম</th>
-                    <th rowSpan={2} className="border border-black w-16 p-1">শ্রেণী ও শাখা</th>
-                    <th rowSpan={2} className="border border-black w-24 p-1">গ্রাম/এলাকা + ডাকঘর + থানা</th>
-                    {BENGALI_MONTHS.map((m, i) => (
-                      <th key={i} className="border border-black min-w-[50px] p-0.5">{m}</th>
-                    ))}
-                    <th rowSpan={2} className="border border-black w-12 p-1">মোট</th>
-                    <th rowSpan={2} className="border border-black w-10 p-1">ID</th>
-                    <th rowSpan={2} className="border border-black w-12 p-1">স্বাক্ষর</th>
-                  </tr>
-                  <tr className="bg-slate-50 print:bg-white h-0">
-                    {/* Empty row to satisfy rowSpan structure if needed, but headers are already set */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {chunk.map((student, idx) => (
-                    <tr key={student.id} className="print:break-inside-avoid">
-                      <td className="border border-black text-center font-bold align-middle">
-                        {toBengaliNumber((cardIndex * 10) + idx + 1)}
-                      </td>
-                      <td className="border border-black p-1 align-middle">
-                        <div className="font-bold text-[10px]">{student.name_bengali}</div>
-                        <div className="text-[8px] mt-0.5">{student.father_name}</div>
-                      </td>
-                      <td className="border border-black text-center align-middle">
-                        <div>{student.class}</div>
-                        <div>{student.section}</div>
-                      </td>
-                      <td className="border border-black p-1 align-middle text-[8px] leading-tight">
-                        {student.present_address}
-                      </td>
-                      {MONTHS.map(month => {
-                        const payment = payments.find(p => p.student_id === student.id && p.month === month && p.year === filters.year);
-                        const isSaving = saving === `${student.id}-${month}`;
-                        
-                        return (
-                          <td key={month} className="border border-black p-0 align-top">
-                            <div className="flex flex-col divide-y divide-black/30">
-                              <LedgerInput 
-                                label="ভর্তি" 
-                                value={payment?.admission_fee} 
-                                onBlur={(val) => handleUpsert(student.id, month, 'admission_fee', val)}
-                                isSaving={isSaving}
-                              />
-                              <LedgerInput 
-                                label="বকেয়া" 
-                                value={payment?.backdue} 
-                                onBlur={(val) => handleUpsert(student.id, month, 'backdue', val)}
-                                isSaving={isSaving}
-                              />
-                              <LedgerInput 
-                                label="বেতন" 
-                                value={payment?.salary} 
-                                onBlur={(val) => handleUpsert(student.id, month, 'salary', val)}
-                                isSaving={isSaving}
-                              />
-                              <LedgerInput 
-                                label="পরীক্ষা" 
-                                value={payment?.exam_fee} 
-                                onBlur={(val) => handleUpsert(student.id, month, 'exam_fee', val)}
-                                isSaving={isSaving}
-                              />
-                            </div>
-                          </td>
-                        );
-                      })}
-                      <td className="border border-black text-center font-bold align-middle">
-                        {toBengaliNumber(totals.studentTotals[student.id] || 0)}
-                      </td>
-                      <td className="border border-black text-center align-middle text-[8px]">
-                        {student.sl_no}
-                      </td>
-                      <td className="border border-black"></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Footer */}
-              <div className="flex justify-between mt-8 px-8 print:mt-12">
-                <div className="text-center">
-                  <div className="border-t border-black pt-1 w-32 font-bold text-[10px]">হিসাবরক্ষক</div>
-                </div>
-                <div className="text-center">
-                  <div className="border-t border-black pt-1 w-32 font-bold text-[10px]">প্রধান শিক্ষক</div>
-                </div>
+              <div className="pt-4 flex gap-3">
+                <button 
+                  onClick={() => setSelectedCell(null)}
+                  className="flex-1 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveModal}
+                  disabled={saving}
+                  className="flex-1 py-2 bg-[#1e3a5f] text-white rounded-lg hover:bg-[#162c46] font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  Save Changes
+                </button>
               </div>
             </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function LedgerInput({ label, value, onBlur, isSaving }: { label: string, value?: number, onBlur: (val: string) => void, isSaving: boolean }) {
-  const [localValue, setLocalValue] = useState(value?.toString() || '');
-
-  useEffect(() => {
-    setLocalValue(value?.toString() || '');
-  }, [value]);
-
-  return (
-    <div className="flex items-center px-0.5 h-[14px]">
-      <span className="text-[6px] font-bold w-6 shrink-0 leading-none">{label}</span>
-      <input 
-        type="number"
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={() => onBlur(localValue)}
-        className={clsx(
-          "w-full bg-transparent border-none p-0 text-[8px] text-right outline-none focus:ring-0 leading-none h-full",
-          isSaving && "opacity-50"
-        )}
-      />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
