@@ -36,6 +36,67 @@
     .page-break-after-always {
       page-break-after: always;
     }
+    html, body {
+      width: 210mm; /* A4 width */
+      height: 297mm; /* A4 height */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      overflow: hidden;
+    }
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+    .filter-bar, .add-student-fab {
+      display: none !important;
+    }
+    .wp-card {
+      page-break-after: always;
+      border: none !important;
+      box-shadow: none !important;
+      margin-bottom: 0 !important;
+      border-radius: 0 !important;
+    }
+    .wp-card:last-of-type {
+      page-break-after: avoid;
+    }
+    table {
+      width: 100% !important;
+    }
+    th, td {
+      border-color: #ccc !important;
+    }
+    .bg-\[\#1e3a5f\] {
+      background-color: #1e3a5f !important;
+      color: white !important;
+    }
+    .bg-\[\#f9f9f9\] {
+      background-color: #f9f9f9 !important;
+    }
+    .bg-white {
+      background-color: white !important;
+    }
+    .text-green-600 {
+      color: #22c55e !important; /* Tailwind green-600 */
+    }
+    .text-red-600 {
+      color: #ef4444 !important; /* Tailwind red-600 */
+    }
+    .text-slate-400 {
+      color: #94a3b8 !important; /* Tailwind slate-400 */
+    }
+    .text-slate-500 {
+      color: #64748b !important; /* Tailwind slate-500 */
+    }
+    .text-slate-700 {
+      color: #334155 !important; /* Tailwind slate-700 */
+    }
+    .text-slate-800 {
+      color: #1e293b !important; /* Tailwind slate-800 */
+    }
+    .text-\[\#1d2327\] {
+      color: #1d2327 !important;
+    }
   }
 }
 
