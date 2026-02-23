@@ -57,8 +57,11 @@ export default function ResultProcessing() {
         order_index: i
       }));
       
-      const { data: seeded } = await supabase.from('subjects').insert(defaultSubjects).select();
+      const { data: seeded, error: seedError } = await supabase.from('subjects').insert(defaultSubjects).select();
       if (seeded) setSubjects(seeded);
+      else if (seedError) {
+        console.error("Error seeding subjects:", seedError);
+      }
     }
   };
 
@@ -106,6 +109,9 @@ export default function ResultProcessing() {
         has_cq: true,
         order_index: 0
       });
+    } else {
+      console.error("Error saving subject:", error);
+      alert("Failed to save subject. Please make sure the 'subjects' table exists in Supabase. Error: " + error.message);
     }
   };
 
@@ -113,6 +119,10 @@ export default function ResultProcessing() {
     if (!confirm('Are you sure you want to delete this subject?')) return;
     const { error } = await supabase.from('subjects').delete().eq('id', id);
     if (!error) fetchSubjects();
+    else {
+      console.error("Error deleting subject:", error);
+      alert("Failed to delete subject: " + error.message);
+    }
   };
 
   const fetchMarks = async (studentId: string) => {
