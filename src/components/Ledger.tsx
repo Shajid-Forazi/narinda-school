@@ -119,8 +119,56 @@ export default function Ledger() {
   };
 
   const handleAddStudent = async () => {
-    // This will be implemented later, for now, it's a placeholder
-    alert("Add Student functionality will be implemented here.");
+    const studentName = prompt("নতুন ছাত্রের নাম লিখুন (Enter new student's Bengali name):");
+    if (!studentName) return;
+
+    const studentRoll = prompt("নতুন ছাত্রের রোল নম্বর লিখুন (Enter new student's roll number):");
+    if (!studentRoll) return;
+
+    setSaving(true);
+    try {
+      const newStudent: Omit<Student, 'id' | 'created_at'> = {
+        sl_no: studentRoll,
+        name_bengali: studentName,
+        name_english: '', // Default empty
+        father_name: '',
+        father_occupation: '',
+        mother_name: '',
+        mother_occupation: '',
+        present_address: '',
+        present_phone: '',
+        permanent_address: '',
+        permanent_phone: '',
+        date_of_birth: '2000-01-01', // Default date
+        class: filters.class,
+        section: filters.section,
+        shift: 'Morning', // Default shift
+        previous_institute: '',
+        previous_address: '',
+        previous_class: '',
+        session: filters.year, // Use current year as session
+        photo_url: null,
+      };
+
+      const { data, error } = await supabase
+        .from('students')
+        .insert([newStudent])
+        .select();
+
+      if (error) {
+        console.error("Error adding student:", error);
+        alert("ছাত্র যোগ করতে ব্যর্থ: " + error.message);
+      } else if (data && data.length > 0) {
+        setStudents(prev => [...prev, data[0]]);
+        alert(`ছাত্র ${studentName} সফলভাবে যোগ করা হয়েছে।`);
+        fetchData(); // Re-fetch all data to ensure payments are also updated if any defaults are set
+      }
+    } catch (error) {
+      console.error("Unexpected error adding student:", error);
+      alert("একটি অপ্রত্যাশিত ত্রুটি হয়েছে।");
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -179,10 +227,10 @@ export default function Ledger() {
       studentTotals[studentId].backdue += p.backdue || 0;
       studentTotals[studentId].monthly_salary[monthKey] = (studentTotals[studentId].monthly_salary[monthKey] || 0) + (p.salary || 0);
       studentTotals[studentId].monthly_exam[monthKey] = (studentTotals[studentId].monthly_exam[monthKey] || 0) + (p.exam_fee || 0);
-      // Assuming 'miscellaneous' is part of payment, if not, it needs to be added to Payment type
+      studentTotals[studentId].miscellaneous += p.miscellaneous || 0;
       // studentTotals[studentId].miscellaneous += p.miscellaneous || 0;
 
-      const rowSum = (p.admission_fee || 0) + (p.backdue || 0) + (p.salary || 0) + (p.exam_fee || 0);
+      const rowSum = (p.admission_fee || 0) + (p.backdue || 0) + (p.salary || 0) + (p.exam_fee || 0) + (p.miscellaneous || 0);
       studentTotals[studentId].grand_total += rowSum;
 
       // Update column totals
@@ -190,6 +238,7 @@ export default function Ledger() {
       columnTotals.backdue += p.backdue || 0;
       columnTotals[`${monthKey}_salary` as keyof typeof columnTotals] = (columnTotals[`${monthKey}_salary` as keyof typeof columnTotals] || 0) + (p.salary || 0);
       columnTotals[`${monthKey}_exam` as keyof typeof columnTotals] = (columnTotals[`${monthKey}_exam` as keyof typeof columnTotals] || 0) + (p.exam_fee || 0);
+      columnTotals.miscellaneous += p.miscellaneous || 0;
       columnTotals.grand_total += rowSum;
     });
 
@@ -506,7 +555,29 @@ export default function Ledger() {
                           })}
 
                           {/* অন্যান্য (Miscellaneous) */}
-                          <td className="p-2 border border-[#ccc] text-center text-slate-400">—</td> {/* Placeholder for now */}
+                          <td
+                            className={clsx("p-2 border border-[#ccc] text-center", studentPaymentTotals?.miscellaneous > 0 ? "text-green-600" : "text-slate-400")}
+                            onClick={() => handleCellClick(student.id, MONTHS[0], 'miscellaneous', studentPaymentTotals?.miscellaneous || 0)}
+                          >
+                            {editingCell?.studentId === student.id && editingCell?.field === 'miscellaneous' ? (
+                              <input
+                                ref={editInputRef}
+                                type="number"
+                                value={inlineEditValue}
+                                onChange={e => setInlineEditValue(parseFloat(e.target.value) || 0)}
+                                onBlur={handleInlineSave}
+                                onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
+                                className="w-full text-center wp-input p-0 border-none focus:ring-0"
+                              />
+                            ) : (
+                              <span className="relative group">
+                                {studentPaymentTotals?.miscellaneous > 0 ? toBengaliNumber(studentPaymentTotals.miscellaneous) : '—'}
+                                {showSaveSuccess && editingCell?.studentId === student.id && editingCell?.field === 'miscellaneous' && (
+                                  <CheckCircle2 size={16} className="text-green-500 absolute -right-5 top-0" />
+                                )}
+                              </span>
+                            )}
+                          </td>
 
                           {/* মোট আয় (Grand Total) */}
                           <td className="p-2 border border-[#ccc] text-center font-bold text-[#1e3a5f]">{toBengaliNumber(totalPaid)}</td>
@@ -543,8 +614,8 @@ export default function Ledger() {
                 </table>
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </div>
 
       {/* Add Student FAB */}

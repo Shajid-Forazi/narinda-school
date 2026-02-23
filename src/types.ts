@@ -32,6 +32,7 @@ export type Payment = {
   backdue: number;
   salary: number;
   exam_fee: number;
+  miscellaneous: number;
   created_at?: string;
 };
 
