@@ -221,6 +221,7 @@ export default function Ledger() {
       if (!studentTotals[studentId]) return; // Should not happen if students are fetched correctly
 
       const monthIndex = MONTHS.indexOf(p.month);
+      if (monthIndex === -1) return;
       const monthKey = MONTHS[monthIndex].toLowerCase();
 
       studentTotals[studentId].admission_fee += p.admission_fee || 0;
@@ -367,28 +368,16 @@ export default function Ledger() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="bg-[#f9f9f9] text-left font-bold text-[#1d2327]">
-                      <th className="p-2 border border-[#ccc] w-10 text-center">ক্র</th>
-                      <th className="p-2 border border-[#ccc] w-24 text-center">রোল</th>
-                      <th className="p-2 border border-[#ccc] w-48 text-left">ছাত্রের নাম</th>
-                      <th colSpan={3} className="p-2 border border-[#ccc] text-center">ভর্তি ও বকেয়া</th>
-                      {BENGALI_MONTHS_SHORT.map((month, idx) => (
+                      <th className="p-2 border border-[#ccc] w-10 text-center">ক্র</th><th className="p-2 border border-[#ccc] w-24 text-center">রোল</th><th className="p-2 border border-[#ccc] w-48 text-left">ছাত্রের নাম</th><th colSpan={3} className="p-2 border border-[#ccc] text-center">ভর্তি ও বকেয়া</th>{BENGALI_MONTHS_SHORT.map((month, idx) => (
                         SPECIAL_MONTHS.includes(MONTHS[idx]) ? (
                           <th colSpan={2} key={month} className="p-2 border border-[#ccc] text-center">{month}</th>
                         ) : (
                           <th key={month} className="p-2 border border-[#ccc] text-center">{month}</th>
                         )
-                      ))}
-                      <th className="p-2 border border-[#ccc] w-20 text-center">অন্যান্য</th>
-                      <th className="p-2 border border-[#ccc] w-24 text-center">মোট আয়</th>
+                      ))}<th className="p-2 border border-[#ccc] w-20 text-center">অন্যান্য</th><th className="p-2 border border-[#ccc] w-24 text-center">মোট আয়</th>
                     </tr>
                     <tr className="bg-[#f9f9f9] text-left font-bold text-[#1d2327]">
-                      <th className="p-1 border border-[#ccc]"></th>
-                      <th className="p-1 border border-[#ccc]"></th>
-                      <th className="p-1 border border-[#ccc]"></th>
-                      <th className="p-1 border border-[#ccc] text-center text-xs">ভর্তি</th>
-                      <th className="p-1 border border-[#ccc] text-center text-xs">জমা</th>
-                      <th className="p-1 border border-[#ccc] text-center text-xs">বকেয়া</th>
-                      {BENGALI_MONTHS_SHORT.map((month, idx) => (
+                      <th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc] text-center text-xs">ভর্তি</th><th className="p-1 border border-[#ccc] text-center text-xs">জমা</th><th className="p-1 border border-[#ccc] text-center text-xs">বকেয়া</th>{BENGALI_MONTHS_SHORT.map((month, idx) => (
                         SPECIAL_MONTHS.includes(MONTHS[idx]) ? (
                           <React.Fragment key={month}>
                             <th className="p-1 border border-[#ccc] text-center text-xs">বেতন</th>
@@ -397,9 +386,7 @@ export default function Ledger() {
                         ) : (
                           <th key={month} className="p-1 border border-[#ccc] text-center text-xs">বেতন/জমা</th>
                         )
-                      ))}
-                      <th className="p-1 border border-[#ccc]"></th>
-                      <th className="p-1 border border-[#ccc]"></th>
+                      ))}<th className="p-1 border border-[#ccc]"></th><th className="p-1 border border-[#ccc]"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -416,10 +403,7 @@ export default function Ledger() {
                         )}>
                           <td className="p-2 border border-[#ccc] text-center text-slate-500">{toBengaliNumber(cardIndex * STUDENTS_PER_CARD + studentIndex + 1)}</td>
                           <td className="p-2 border border-[#ccc] text-center text-slate-700">{toBengaliNumber(student.sl_no)}</td>
-                          <td className="p-2 border border-[#ccc] text-left font-bold text-slate-800">{student.name_bengali}</td>
-                          
-                          {/* ভর্তি ও বকেয়া (Admission & Backdue) */}
-                          <td
+                          <td className="p-2 border border-[#ccc] text-left font-bold text-slate-800">{student.name_bengali}</td><td
                             className={clsx("p-2 border border-[#ccc] text-center", admissionFee > 0 ? "text-green-600" : "text-slate-400")}
                             onClick={() => handleCellClick(student.id, MONTHS[0], 'admission_fee', admissionFee)}
                           >
@@ -441,9 +425,7 @@ export default function Ledger() {
                                 )}
                               </span>
                             )}
-                          </td>
-                          <td className="p-2 border border-[#ccc] text-center text-slate-400">—</td> {/* জমা (Paid) - Placeholder */}
-                          <td
+                          </td><td className="p-2 border border-[#ccc] text-center text-slate-400">—</td><td
                             className={clsx("p-2 border border-[#ccc] text-center", backdue > 0 ? "text-red-600" : "text-slate-400")}
                             onClick={() => handleCellClick(student.id, MONTHS[0], 'backdue', backdue)}
                           >
@@ -465,10 +447,7 @@ export default function Ledger() {
                                 )}
                               </span>
                             )}
-                          </td>
-
-                          {/* Month Columns */}
-                          {MONTHS.map((month, idx) => {
+                          </td>{MONTHS.map((month, idx) => {
                             const monthKey = month.toLowerCase();
                             const salary = studentPaymentTotals?.monthly_salary[monthKey] || 0;
                             const exam = studentPaymentTotals?.monthly_exam[monthKey] || 0;
@@ -552,10 +531,7 @@ export default function Ledger() {
                                 </td>
                               );
                             }
-                          })}
-
-                          {/* অন্যান্য (Miscellaneous) */}
-                          <td
+                          })}<td
                             className={clsx("p-2 border border-[#ccc] text-center", studentPaymentTotals?.miscellaneous > 0 ? "text-green-600" : "text-slate-400")}
                             onClick={() => handleCellClick(student.id, MONTHS[0], 'miscellaneous', studentPaymentTotals?.miscellaneous || 0)}
                           >
@@ -577,10 +553,7 @@ export default function Ledger() {
                                 )}
                               </span>
                             )}
-                          </td>
-
-                          {/* মোট আয় (Grand Total) */}
-                          <td className="p-2 border border-[#ccc] text-center font-bold text-[#1e3a5f]">{toBengaliNumber(totalPaid)}</td>
+                          </td><td className="p-2 border border-[#ccc] text-center font-bold text-[#1e3a5f]">{toBengaliNumber(totalPaid)}</td>
                         </tr>
                       );
                     })}
@@ -588,11 +561,7 @@ export default function Ledger() {
                   <tfoot>
                     {/* Card Footer - Grand Total Row */}
                     <tr className="bg-[#1e3a5f] text-white font-bold">
-                      <td colSpan={3} className="p-3 border border-white/10 text-right">সর্বমোট (Grand Total)</td>
-                      <td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.admission_fee)}</td>
-                      <td className="p-3 border border-white/10 text-center">—</td> {/* জমা (Paid) */}
-                      <td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.backdue)}</td>
-                      {MONTHS.map((month, idx) => {
+                      <td colSpan={3} className="p-3 border border-white/10 text-right">সর্বমোট (Grand Total)</td><td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.admission_fee)}</td><td className="p-3 border border-white/10 text-center">—</td><td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.backdue)}</td>{MONTHS.map((month, idx) => {
                         const monthKey = month.toLowerCase();
                         if (SPECIAL_MONTHS.includes(month)) {
                           return (
@@ -606,9 +575,7 @@ export default function Ledger() {
                             <td key={month} className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals[`${monthKey}_salary` as keyof typeof totals.columnTotals])}</td>
                           );
                         }
-                      })}
-                      <td className="p-3 border border-white/10 text-center">—</td> {/* অন্যান্য (Miscellaneous) */}
-                      <td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
+                      })}<td className="p-3 border border-white/10 text-center">—</td><td className="p-3 border border-white/10 text-center">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
                     </tr>
                   </tfoot>
                 </table>

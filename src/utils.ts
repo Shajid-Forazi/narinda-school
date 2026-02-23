@@ -1,6 +1,7 @@
 import { getGradeInfo } from './constants';
 
 export const toBengaliNumber = (num: string | number): string => {
+  if (num === undefined || num === null) return '';
   const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
   return num.toString().replace(/\d/g, (digit) => bengaliDigits[parseInt(digit)]);
 };
@@ -14,5 +15,6 @@ export const calculateGrade = (marks: number, maxMarks: number = 100, className:
 };
 
 export const formatCurrency = (amount: number) => {
+  if (amount === undefined || amount === null) return toBengaliNumber(0);
   return toBengaliNumber(amount.toFixed(0));
 };
