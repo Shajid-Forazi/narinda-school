@@ -164,12 +164,13 @@ export default function Ledger() {
     }
   }, [editingCell]);
 
-  const totals = useMemo(() => {
+    const totals = useMemo(() => {
     const studentTotals: Record<string, {
       admission_fee: number;
       backdue: number;
       monthly_salary: Record<string, number>;
       monthly_exam: Record<string, number>;
+      monthly_backdue: Record<string, number>;
       miscellaneous: number;
       grand_total: number;
     }> = {};
@@ -180,9 +181,9 @@ export default function Ledger() {
       miscellaneous: 0,
       grand_total: 0,
       months: MONTHS.reduce((acc, m) => {
-        acc[m.toLowerCase()] = { salary: 0, exam: 0 };
+        acc[m.toLowerCase()] = { salary: 0, exam: 0, backdue: 0 };
         return acc;
-      }, {} as Record<string, {salary: number, exam: number}>)
+      }, {} as Record<string, {salary: number, exam: number, backdue: number}>)
     };
 
     students.forEach(student => {
@@ -191,6 +192,7 @@ export default function Ledger() {
         backdue: 0,
         monthly_salary: {},
         monthly_exam: {},
+        monthly_backdue: {},
         miscellaneous: 0,
         grand_total: 0,
       };
@@ -206,6 +208,7 @@ export default function Ledger() {
       studentTotals[studentId].backdue += p.backdue || 0;
       studentTotals[studentId].monthly_salary[monthKey] = (studentTotals[studentId].monthly_salary[monthKey] || 0) + (p.salary || 0);
       studentTotals[studentId].monthly_exam[monthKey] = (studentTotals[studentId].monthly_exam[monthKey] || 0) + (p.exam_fee || 0);
+      studentTotals[studentId].monthly_backdue[monthKey] = (studentTotals[studentId].monthly_backdue[monthKey] || 0) + (p.backdue || 0);
       studentTotals[studentId].miscellaneous += p.miscellaneous || 0;
 
       const rowSum = (p.admission_fee || 0) + (p.backdue || 0) + (p.salary || 0) + (p.exam_fee || 0) + (p.miscellaneous || 0);
@@ -220,6 +223,7 @@ export default function Ledger() {
       if (columnTotals.months[monthKey]) {
         columnTotals.months[monthKey].salary += p.salary || 0;
         columnTotals.months[monthKey].exam += p.exam_fee || 0;
+        columnTotals.months[monthKey].backdue += p.backdue || 0;
       }
     });
 
@@ -243,7 +247,7 @@ export default function Ledger() {
     return (
       <td 
         className={clsx(
-          "border border-[#ccc] text-center p-0 h-10 cursor-pointer transition-colors hover:bg-blue-50 relative",
+          "border border-[#ccc] text-center p-0 h-8 md:h-10 cursor-pointer transition-colors hover:bg-blue-50 relative",
           value > 0 ? "text-green-600 font-medium" : "text-slate-400"
         )}
         onClick={() => handleCellClick(studentId, month, field, value)}
@@ -271,67 +275,67 @@ export default function Ledger() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-['Noto_Sans_Bengali'] text-[13px] text-[#1d2327]">
+    <div className="min-h-screen bg-white font-['Noto_Sans_Bengali'] text-[10px] md:text-[13px] text-[#1d2327]">
       {/* Top Filters */}
-      <div className="bg-white p-4 flex flex-wrap items-end gap-6 border-b border-[#ccc] print:hidden shadow-sm sticky top-0 z-10">
+      <div className="bg-white p-2 md:p-4 flex flex-wrap items-end gap-3 md:gap-6 border-b border-[#ccc] print:hidden shadow-sm sticky top-0 z-10">
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">শ্রেণী</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500">শ্রেণী</label>
           <select
             value={filters.class}
             onChange={(e) => setFilters({...filters, class: e.target.value})}
-            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-32"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-24 md:w-32"
           >
             {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">শাখা</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500">শাখা</label>
           <select
             value={filters.section}
             onChange={(e) => setFilters({...filters, section: e.target.value})}
-            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-32"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-20 md:w-32"
           >
             {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">সন</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500">সন</label>
           <input
             type="number"
             value={filters.year}
             onChange={(e) => setFilters({...filters, year: e.target.value})}
-            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-24"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-20 md:w-24"
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-500">কার্ড মেয়াদ</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500">কার্ড মেয়াদ</label>
           <input
             type="date"
             value={filters.cardDate}
             onChange={(e) => setFilters({...filters, cardDate: e.target.value})}
-            className="border border-[#ccc] rounded px-3 py-1.5 text-sm outline-none focus:border-[#1e3a5f] w-36"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-28 md:w-36"
           />
         </div>
         <div className="flex-1"></div>
         <button
           onClick={() => window.print()}
-          className="bg-[#1e3a5f] text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-[#162a45] transition-colors"
+          className="bg-[#1e3a5f] text-white px-4 md:px-6 py-1.5 md:py-2 rounded font-bold flex items-center gap-2 hover:bg-[#162a45] transition-colors text-xs md:text-sm"
         >
-          <Printer size={18} /> প্রিন্ট
+          <Printer size={16} /> প্রিন্ট
         </button>
       </div>
 
       {/* Ledger Cards */}
-      <div className="p-6 space-y-12 print:p-0 print:space-y-0">
+      <div className="p-2 md:p-6 space-y-6 md:space-y-12 print:p-0 print:space-y-0">
         {chunkedStudents.length === 0 ? (
           <div className="text-center py-20 text-slate-400 text-lg">কোনো তথ্য পাওয়া যায়নি।</div>
         ) : (
           chunkedStudents.map((studentChunk, cardIndex) => (
-            <div key={cardIndex} className="bg-white border border-[#ccc] shadow-sm print:border-none print:shadow-none page-break-after-always">
+            <div key={cardIndex} className="bg-white border border-[#ccc] shadow-sm print:border-none print:shadow-none page-break-after-always overflow-hidden rounded-lg md:rounded-none">
               {/* Card Header */}
-              <div className="bg-[#1e3a5f] text-white p-4 text-center border-b border-[#ccc]">
-                <h1 className="text-xl font-bold mb-1">নারিন্দা আইডিয়াল স্কুল</h1>
-                <div className="flex justify-center gap-8 text-sm">
+              <div className="bg-[#1e3a5f] text-white p-3 md:p-4 text-center border-b border-[#ccc]">
+                <h1 className="text-lg md:text-xl font-bold mb-1">নারিন্দা আইডিয়াল স্কুল</h1>
+                <div className="flex flex-wrap justify-center gap-3 md:gap-8 text-[10px] md:text-sm">
                   <span>শ্রেণী: {filters.class}</span>
                   <span>শাখা: {filters.section}</span>
                   <span>সন: {toBengaliNumber(filters.year)}</span>
@@ -340,39 +344,36 @@ export default function Ledger() {
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto w-full">
-                <table className="min-w-max w-full border-collapse table-fixed">
+              <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-200">
+                <table className="min-w-max w-full border-collapse">
                   <thead>
-                    <tr className="bg-[#1e3a5f] text-white text-[11px]">
-                      <th className="border border-white/20 w-8 py-2" rowSpan={2}>ক্র</th>
-                      <th className="border border-white/20 w-12 py-2" rowSpan={2}>রোল</th>
-                      <th className="border border-white/20 w-40 py-2" rowSpan={2}>ছাত্রের নাম</th>
-                      <th className="border border-white/20 py-1" colSpan={3}>ভর্তি ও বকেয়া</th>
-                      {BENGALI_MONTHS_SHORT.map((month, idx) => (
-                        <th 
-                          key={month} 
-                          className="border border-white/20 py-1" 
-                          colSpan={SPECIAL_MONTHS.includes(MONTHS[idx]) ? 2 : 1}
-                        >
-                          {month}
-                        </th>
-                      ))}
-                      <th className="border border-white/20 w-16 py-2" rowSpan={2}>অন্যান্য</th>
-                      <th className="border border-white/20 w-20 py-2" rowSpan={2}>মোট আয়</th>
+                    <tr className="bg-[#1e3a5f] text-white text-[9px] md:text-[11px]">
+                      <th className="border border-white/20 w-8 py-2 px-1" rowSpan={2}>ক্র</th>
+                      <th className="border border-white/20 w-10 md:w-12 py-2 px-1" rowSpan={2}>রোল</th>
+                      <th className="border border-white/20 w-32 md:w-40 py-2 px-2" rowSpan={2}>ছাত্রের নাম</th>
+                      <th className="border border-white/20 py-1 w-16 md:w-20 px-1" rowSpan={2}>ভর্তি ফি</th>
+                      {BENGALI_MONTHS_SHORT.map((month, idx) => {
+                        const isSpecial = SPECIAL_MONTHS.includes(MONTHS[idx]);
+                        return (
+                          <th 
+                            key={month} 
+                            className="border border-white/20 py-1 px-1" 
+                            colSpan={isSpecial ? 3 : 2}
+                          >
+                            {month}
+                          </th>
+                        );
+                      })}
+                      <th className="border border-white/20 w-14 md:w-16 py-2 px-1" rowSpan={2}>অন্যান্য</th>
+                      <th className="border border-white/20 w-16 md:w-20 py-2 px-1" rowSpan={2}>মোট আয়</th>
                     </tr>
-                    <tr className="bg-[#1e3a5f] text-white text-[10px]">
-                      <th className="border border-white/20 py-1 w-14">ভর্তি</th>
-                      <th className="border border-white/20 py-1 w-14">জমা</th>
-                      <th className="border border-white/20 py-1 w-14">বকেয়া</th>
+                    <tr className="bg-[#1e3a5f] text-white text-[8px] md:text-[10px]">
                       {MONTHS.map((m, idx) => (
-                        SPECIAL_MONTHS.includes(m) ? (
-                          <React.Fragment key={m}>
-                            <th className="border border-white/20 py-1 w-14">বেতন</th>
-                            <th className="border border-white/20 py-1 w-14">পরীক্ষা</th>
-                          </React.Fragment>
-                        ) : (
-                          <th key={m} className="border border-white/20 py-1 w-14">বেতন</th>
-                        )
+                        <React.Fragment key={m}>
+                          <th className="border border-white/20 py-1 w-12 md:w-14 px-1">বেতন</th>
+                          {SPECIAL_MONTHS.includes(m) && <th className="border border-white/20 py-1 w-12 md:w-14 px-1">পরীক্ষা</th>}
+                          <th className="border border-white/20 py-1 w-12 md:w-14 px-1">বকেয়া</th>
+                        </React.Fragment>
                       ))}
                     </tr>
                   </thead>
@@ -381,26 +382,25 @@ export default function Ledger() {
                       const stTotals = totals.studentTotals[student.id];
                       return (
                         <tr key={student.id} className={idx % 2 === 0 ? "bg-white" : "bg-[#f9f9f9]"}>
-                          <td className="border border-[#ccc] text-center py-2">{toBengaliNumber(idx + 1)}</td>
-                          <td className="border border-[#ccc] text-center py-2">{toBengaliNumber(student.sl_no)}</td>
-                          <td className="border border-[#ccc] px-2 py-2 font-bold text-left truncate">{student.name_bengali}</td>
+                          <td className="border border-[#ccc] text-center py-2 px-1">{toBengaliNumber(idx + 1)}</td>
+                          <td className="border border-[#ccc] text-center py-2 px-1">{toBengaliNumber(student.sl_no)}</td>
+                          <td className="border border-[#ccc] px-2 py-2 font-bold text-left truncate max-w-[120px] md:max-w-none">{student.name_bengali}</td>
                           
-                          {/* Admission & Arrears (3 sub-cols) */}
-                          <td className="border border-[#ccc] text-center text-slate-300">—</td>
+                          {/* Admission Fee */}
                           {renderCell(student.id, MONTHS[0], 'admission_fee', stTotals?.admission_fee || 0)}
-                          {renderCell(student.id, MONTHS[0], 'backdue', stTotals?.backdue || 0)}
 
                           {/* Months */}
                           {MONTHS.map((m) => (
                             <React.Fragment key={m}>
                               {renderCell(student.id, m, 'salary', stTotals?.monthly_salary[m.toLowerCase()] || 0)}
                               {SPECIAL_MONTHS.includes(m) && renderCell(student.id, m, 'exam_fee', stTotals?.monthly_exam[m.toLowerCase()] || 0)}
+                              {renderCell(student.id, m, 'backdue', stTotals?.monthly_backdue[m.toLowerCase()] || 0)}
                             </React.Fragment>
                           ))}
 
                           {/* Others & Total */}
                           {renderCell(student.id, MONTHS[0], 'miscellaneous', stTotals?.miscellaneous || 0)}
-                          <td className="border border-[#ccc] text-center font-bold text-[#1e3a5f] bg-blue-50/30">
+                          <td className="border border-[#ccc] text-center font-bold text-[#1e3a5f] bg-blue-50/30 px-1">
                             {toBengaliNumber(stTotals?.grand_total || 0)}
                           </td>
                         </tr>
@@ -408,21 +408,20 @@ export default function Ledger() {
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#1e3a5f] text-white font-bold text-[12px]">
+                    <tr className="bg-[#1e3a5f] text-white font-bold text-[10px] md:text-[12px]">
                       <td colSpan={3} className="border border-white/20 p-2 text-right">সর্বমোট (Grand Total)</td>
-                      <td className="border border-white/20 text-center">—</td>
-                      <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.admission_fee)}</td>
-                      <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.backdue)}</td>
+                      <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.admission_fee)}</td>
                       {MONTHS.map(m => (
                         <React.Fragment key={m}>
-                          <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].salary)}</td>
+                          <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].salary)}</td>
                           {SPECIAL_MONTHS.includes(m) && (
-                            <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].exam)}</td>
+                            <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].exam)}</td>
                           )}
+                          <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].backdue)}</td>
                         </React.Fragment>
                       ))}
-                      <td className="border border-white/20 text-center">{toBengaliNumber(totals.columnTotals.miscellaneous)}</td>
-                      <td className="border border-white/20 text-center bg-[#162a45]">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
+                      <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.miscellaneous)}</td>
+                      <td className="border border-white/20 text-center bg-[#162a45] px-1">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
                     </tr>
                   </tfoot>
                 </table>

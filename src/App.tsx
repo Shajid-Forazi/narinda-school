@@ -28,6 +28,7 @@ import StudentList from './components/StudentList';
 import Ledger from './components/Ledger';
 import ResultProcessing from './components/ResultProcessing';
 import Login from './components/Login';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -371,6 +372,7 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+      <PWAInstallPrompt />
     </div>
   );
 }

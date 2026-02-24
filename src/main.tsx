@@ -2,15 +2,10 @@ import React, {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { registerSW } from 'virtual:pwa-register';
 
-// Unregister old service workers to fix blank screen issues
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister();
-    }
-  });
-}
+// Register service worker
+registerSW({ immediate: true });
 
 class ErrorBoundary extends React.Component<any, any> {
   state = { hasError: false };
