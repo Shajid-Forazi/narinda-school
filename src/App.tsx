@@ -358,7 +358,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-8 print:p-0">
+        <div className="flex-1 overflow-auto p-3 md:p-8 print:p-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentView + (editingStudent?.id || '')}
