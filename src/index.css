@@ -42,6 +42,21 @@
   }
 
   @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+
+  .grid-line {
+    @apply border border-gray-400;
+  }
+
+  .diagonal-split {
+    background: linear-gradient(to bottom right, transparent calc(50% - 0.5px), #9ca3af 50%, transparent calc(50% + 0.5px));
+  }
+}
+
+@layer utilities {
     .print\:hidden {
       display: none !important;
     }
@@ -122,7 +137,6 @@
       color: #1d2327 !important;
     }
   }
-}
 
 .wp-card {
   @apply bg-white border border-[#c3c4c7] shadow-sm;

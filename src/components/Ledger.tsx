@@ -240,140 +240,141 @@ export default function Ledger() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#1e3a5f]" size={32} /></div>;
 
-  const renderCell = (studentId: string, month: string, field: keyof Payment, value: number) => {
+  const handleRemoveStudent = async (studentId: string) => {
+    if (!confirm("আপনি কি এই ছাত্রের তথ্য মুছে ফেলতে চান?")) return;
+    
+    const { error } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', studentId);
+
+    if (!error) {
+      setStudents(prev => prev.filter(s => s.id !== studentId));
+    } else {
+      console.error("Error removing student:", error);
+    }
+  };
+
+  const renderCell = (studentId: string, month: string, field: keyof Payment, value: number, label?: string, colorClass: string = "text-blue-900") => {
     const isEditing = editingCell?.studentId === studentId && editingCell?.month === month && editingCell?.field === field;
     const isSuccess = showSaveSuccess?.studentId === studentId && showSaveSuccess?.month === month && showSaveSuccess?.field === field;
 
     return (
-      <td 
+      <div 
         className={clsx(
-          "border border-[#ccc] text-center p-0 h-8 md:h-10 cursor-pointer transition-colors hover:bg-blue-50 relative",
-          value > 0 ? "text-green-600 font-medium" : "text-slate-400"
+          "flex-1 flex flex-col relative cursor-pointer hover:bg-blue-50 transition-colors min-h-[40px]",
+          isEditing ? "bg-white" : ""
         )}
-        onClick={() => handleCellClick(studentId, month, field, value)}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleCellClick(studentId, month, field, value);
+        }}
       >
-        {isEditing ? (
-          <input
-            ref={editInputRef}
-            type="number"
-            value={inlineEditValue}
-            onChange={e => setInlineEditValue(e.target.value)}
-            onBlur={handleInlineSave}
-            onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-            className="w-full h-full text-center bg-white outline-none border-2 border-blue-500 rounded-sm"
-          />
-        ) : (
-          <div className="flex items-center justify-center w-full h-full">
-            {value > 0 ? toBengaliNumber(value) : '—'}
-            {isSuccess && (
-              <CheckCircle2 size={12} className="text-green-500 absolute right-0.5 top-0.5" />
-            )}
-          </div>
-        )}
-      </td>
+        {label && <span className="text-[8px] px-1 font-black bg-gray-100/50 text-gray-500 uppercase">{label}</span>}
+        <div className="flex-1 flex items-center justify-center relative">
+          {isEditing ? (
+            <input
+              ref={editInputRef}
+              type="number"
+              value={inlineEditValue}
+              onChange={e => setInlineEditValue(e.target.value)}
+              onBlur={handleInlineSave}
+              onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
+              className="w-full h-full text-center bg-white outline-none border-2 border-blue-500 rounded-sm text-[12px] font-black"
+            />
+          ) : (
+            <span className={clsx("text-[12px] font-black", value > 0 ? colorClass : "text-slate-300")}>
+              {value > 0 ? toBengaliNumber(value) : '০'}
+            </span>
+          )}
+          {isSuccess && (
+            <CheckCircle2 size={10} className="text-green-500 absolute right-0.5 top-0.5" />
+          )}
+        </div>
+      </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-white font-['Noto_Sans_Bengali'] text-[10px] md:text-[13px] text-[#1d2327]">
+    <div className="min-h-screen bg-white font-['Noto_Sans_Bengali'] text-[11px] text-[#1d2327]">
       {/* Top Filters */}
-      <div className="bg-white p-2 md:p-4 flex flex-wrap items-end gap-3 md:gap-6 border-b border-[#ccc] print:hidden shadow-sm sticky top-0 z-10">
+      <div className="bg-white p-2 md:p-4 flex flex-wrap items-end gap-3 md:gap-6 border-b border-[#ccc] print:hidden shadow-sm sticky top-0 z-20">
         <div className="space-y-1">
-          <label className="block text-[10px] md:text-xs font-bold text-slate-500">শ্রেণী</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">শ্রেণী</label>
           <select
             value={filters.class}
             onChange={(e) => setFilters({...filters, class: e.target.value})}
-            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-24 md:w-32"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-24 md:w-32 font-bold"
           >
             {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] md:text-xs font-bold text-slate-500">শাখা</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">শাখা</label>
           <select
             value={filters.section}
             onChange={(e) => setFilters({...filters, section: e.target.value})}
-            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-20 md:w-32"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-20 md:w-32 font-bold"
           >
             {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] md:text-xs font-bold text-slate-500">সন</label>
+          <label className="block text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">সন</label>
           <input
             type="number"
             value={filters.year}
             onChange={(e) => setFilters({...filters, year: e.target.value})}
-            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-20 md:w-24"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="block text-[10px] md:text-xs font-bold text-slate-500">কার্ড মেয়াদ</label>
-          <input
-            type="date"
-            value={filters.cardDate}
-            onChange={(e) => setFilters({...filters, cardDate: e.target.value})}
-            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-28 md:w-36"
+            className="border border-[#ccc] rounded px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm outline-none focus:border-[#1e3a5f] w-20 md:w-24 font-bold"
           />
         </div>
         <div className="flex-1"></div>
         <button
           onClick={() => window.print()}
-          className="bg-[#1e3a5f] text-white px-4 md:px-6 py-1.5 md:py-2 rounded font-bold flex items-center gap-2 hover:bg-[#162a45] transition-colors text-xs md:text-sm"
+          className="bg-slate-900 text-white px-4 md:px-6 py-1.5 md:py-2 rounded font-black flex items-center gap-2 hover:bg-blue-600 transition-all text-xs md:text-sm uppercase tracking-tighter"
         >
-          <Printer size={16} /> প্রিন্ট
+          <Printer size={16} /> প্রিন্ট লেজার
         </button>
       </div>
 
       {/* Ledger Cards */}
       <div className="p-2 md:p-6 space-y-6 md:space-y-12 print:p-0 print:space-y-0">
         {chunkedStudents.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 text-lg">কোনো তথ্য পাওয়া যায়নি।</div>
+          <div className="text-center py-20 text-slate-400 text-lg font-bold">কোনো তথ্য পাওয়া যায়নি।</div>
         ) : (
           chunkedStudents.map((studentChunk, cardIndex) => (
-            <div key={cardIndex} className="bg-white border border-[#ccc] shadow-sm print:border-none print:shadow-none page-break-after-always overflow-hidden rounded-lg md:rounded-none">
+            <div key={cardIndex} className="bg-white border border-gray-400 shadow-sm print:border-none print:shadow-none page-break-after-always overflow-hidden">
               {/* Card Header */}
-              <div className="bg-[#1e3a5f] text-white p-3 md:p-4 text-center border-b border-[#ccc]">
-                <h1 className="text-lg md:text-xl font-bold mb-1">নারিন্দা আইডিয়াল স্কুল</h1>
-                <div className="flex flex-wrap justify-center gap-3 md:gap-8 text-[10px] md:text-sm">
-                  <span>শ্রেণী: {filters.class}</span>
-                  <span>শাখা: {filters.section}</span>
-                  <span>সন: {toBengaliNumber(filters.year)}</span>
-                  <span>কার্ড মেয়াদ: {toBengaliNumber(new Date(filters.cardDate).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' }))}</span>
+              <div className="bg-gray-100 p-3 md:p-4 text-center border-b border-gray-400 print:bg-white">
+                <h1 className="text-lg md:text-2xl font-black mb-1 text-slate-900">নারিন্দা আইডিয়াল স্কুল - লেজার শিট</h1>
+                <div className="flex flex-wrap justify-center gap-3 md:gap-8 text-[10px] md:text-sm font-black text-slate-600">
+                  <span className="bg-white px-2 py-0.5 rounded border border-gray-300">শ্রেণী: {filters.class}</span>
+                  <span className="bg-white px-2 py-0.5 rounded border border-gray-300">শাখা: {filters.section}</span>
+                  <span className="bg-white px-2 py-0.5 rounded border border-gray-300">সন: {toBengaliNumber(filters.year)}</span>
                 </div>
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-200">
-                <table className="min-w-max w-full border-collapse">
+              <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-300">
+                <table className="min-w-max w-full border-collapse border border-gray-400">
                   <thead>
-                    <tr className="bg-[#1e3a5f] text-white text-[9px] md:text-[11px]">
-                      <th className="border border-white/20 w-8 py-2 px-1" rowSpan={2}>ক্র</th>
-                      <th className="border border-white/20 w-10 md:w-12 py-2 px-1" rowSpan={2}>রোল</th>
-                      <th className="border border-white/20 w-32 md:w-40 py-2 px-2" rowSpan={2}>ছাত্রের নাম</th>
-                      <th className="border border-white/20 py-1 w-16 md:w-20 px-1" rowSpan={2}>ভর্তি ফি</th>
-                      {BENGALI_MONTHS_SHORT.map((month, idx) => {
-                        const isSpecial = SPECIAL_MONTHS.includes(MONTHS[idx]);
-                        return (
-                          <th 
-                            key={month} 
-                            className="border border-white/20 py-1 px-1" 
-                            colSpan={isSpecial ? 3 : 2}
-                          >
-                            {month}
-                          </th>
-                        );
-                      })}
-                      <th className="border border-white/20 w-14 md:w-16 py-2 px-1" rowSpan={2}>অন্যান্য</th>
-                      <th className="border border-white/20 w-16 md:w-20 py-2 px-1" rowSpan={2}>মোট আয়</th>
+                    <tr className="bg-gray-100 h-12 text-[11px]">
+                      <th className="border border-gray-400 min-w-[50px] md:min-w-[70px] text-center font-black px-1" rowSpan={2}>রোল</th>
+                      <th className="border border-gray-400 min-w-[150px] md:min-w-[200px] text-center font-black px-2" rowSpan={2}>ছাত্র/ছাত্রীর নাম</th>
+                      <th className="border border-gray-400 min-w-[130px] md:min-w-[150px] text-center font-black px-1" rowSpan={2}>ভর্তি ও বকেয়া</th>
+                      <th className="border border-gray-400 text-center font-black px-1" colSpan={12}>মাসের আদায়</th>
+                      <th className="border border-gray-400 min-w-[60px] md:min-w-[80px] text-center font-black px-1" rowSpan={2}>অন্যান্য</th>
+                      <th className="border border-gray-400 min-w-[80px] md:min-w-[100px] text-center font-black px-1" rowSpan={2}>মোট আয়</th>
+                      <th className="border border-gray-400 w-[40px] no-print" rowSpan={2}></th>
                     </tr>
-                    <tr className="bg-[#1e3a5f] text-white text-[8px] md:text-[10px]">
-                      {MONTHS.map((m, idx) => (
-                        <React.Fragment key={m}>
-                          <th className="border border-white/20 py-1 w-12 md:w-14 px-1">বেতন</th>
-                          {SPECIAL_MONTHS.includes(m) && <th className="border border-white/20 py-1 w-12 md:w-14 px-1">পরীক্ষা</th>}
-                          <th className="border border-white/20 py-1 w-12 md:w-14 px-1">বকেয়া</th>
-                        </React.Fragment>
+                    <tr className="bg-gray-50 h-8 text-[10px]">
+                      {MONTHS.map(month => (
+                        <th key={month} className={clsx(
+                          "border border-gray-400 text-center font-black px-2 min-w-[60px] md:min-w-[80px]",
+                          (month === 'November' || month === 'December') ? "border-r-[3px] border-black" : ""
+                        )}>
+                          {BENGALI_MONTHS_SHORT[MONTHS.indexOf(month)]}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -381,47 +382,112 @@ export default function Ledger() {
                     {studentChunk.map((student, idx) => {
                       const stTotals = totals.studentTotals[student.id];
                       return (
-                        <tr key={student.id} className={idx % 2 === 0 ? "bg-white" : "bg-[#f9f9f9]"}>
-                          <td className="border border-[#ccc] text-center py-2 px-1">{toBengaliNumber(idx + 1)}</td>
-                          <td className="border border-[#ccc] text-center py-2 px-1">{toBengaliNumber(student.sl_no)}</td>
-                          <td className="border border-[#ccc] px-2 py-2 font-bold text-left truncate max-w-[120px] md:max-w-none">{student.name_bengali}</td>
-                          
-                          {/* Admission Fee */}
-                          {renderCell(student.id, MONTHS[0], 'admission_fee', stTotals?.admission_fee || 0)}
+                        <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                          {/* Roll */}
+                          <td className="border border-gray-400 p-2 align-middle text-center font-black text-[16px]">
+                            {toBengaliNumber(student.sl_no)}
+                          </td>
+
+                          {/* Name */}
+                          <td className="border border-gray-400 p-3 align-top">
+                            <div className="font-black text-[14px] leading-tight">
+                              {student.name_bengali}
+                            </div>
+                            {student.present_phone && (
+                              <div className="text-[10px] text-slate-500 font-bold mt-1 whitespace-nowrap">
+                                📞 {toBengaliNumber(student.present_phone)}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Admission & Arrears */}
+                          <td className="border border-gray-400 p-0 align-top">
+                            <div className="flex flex-col h-full divide-y divide-gray-400 min-h-[120px]">
+                              <div className="flex-[1.5] flex flex-col">
+                                {renderCell(student.id, MONTHS[0], 'admission_fee', stTotals?.admission_fee || 0, "ভর্তি")}
+                              </div>
+                              <div className="flex-[2] flex h-full divide-x divide-gray-400">
+                                <div className="flex-1 flex flex-col bg-red-50/30">
+                                  {renderCell(student.id, MONTHS[0], 'backdue', stTotals?.backdue || 0, "বকেয়া", "text-red-600")}
+                                </div>
+                                <div className="flex-1 flex flex-col bg-green-50/30">
+                                  <div className="flex-1 flex flex-col">
+                                    <span className="text-[8px] px-1 font-black bg-gray-100/50 text-gray-500 uppercase">জমা</span>
+                                    <div className="flex-1 flex items-center justify-center text-[12px] font-black text-green-700 p-1">
+                                      {toBengaliNumber(stTotals?.grand_total || 0)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
 
                           {/* Months */}
-                          {MONTHS.map((m) => (
-                            <React.Fragment key={m}>
-                              {renderCell(student.id, m, 'salary', stTotals?.monthly_salary[m.toLowerCase()] || 0)}
-                              {SPECIAL_MONTHS.includes(m) && renderCell(student.id, m, 'exam_fee', stTotals?.monthly_exam[m.toLowerCase()] || 0)}
-                              {renderCell(student.id, m, 'backdue', stTotals?.monthly_backdue[m.toLowerCase()] || 0)}
-                            </React.Fragment>
-                          ))}
+                          {MONTHS.map((m) => {
+                            const isSpecial = SPECIAL_MONTHS.includes(m);
+                            const isLastTwo = m === 'November' || m === 'December';
+                            return (
+                              <td key={m} className={clsx(
+                                "border border-gray-400 p-0 align-top h-full",
+                                isLastTwo ? "border-r-[3px] border-black" : ""
+                              )}>
+                                <div className="flex flex-col h-full divide-y divide-gray-300 min-h-[120px]">
+                                  {renderCell(student.id, m, 'salary', stTotals?.monthly_salary[m.toLowerCase()] || 0, "বেতন", "text-blue-900")}
+                                  {isSpecial && renderCell(student.id, m, 'exam_fee', stTotals?.monthly_exam[m.toLowerCase()] || 0, "পরীক্ষা", "text-red-800")}
+                                  {renderCell(student.id, m, 'backdue', stTotals?.monthly_backdue[m.toLowerCase()] || 0, "বকেয়া", "text-orange-700")}
+                                </div>
+                              </td>
+                            );
+                          })}
 
-                          {/* Others & Total */}
-                          {renderCell(student.id, MONTHS[0], 'miscellaneous', stTotals?.miscellaneous || 0)}
-                          <td className="border border-[#ccc] text-center font-bold text-[#1e3a5f] bg-blue-50/30 px-1">
-                            {toBengaliNumber(stTotals?.grand_total || 0)}
+                          {/* Others */}
+                          <td className="border border-gray-400 p-0 align-top">
+                            <div className="flex flex-col h-full min-h-[120px]">
+                              {renderCell(student.id, MONTHS[0], 'miscellaneous', stTotals?.miscellaneous || 0, "অন্যান্য", "text-gray-800")}
+                            </div>
+                          </td>
+
+                          {/* Total */}
+                          <td className="border border-gray-400 p-2 text-center font-black text-blue-900 bg-blue-50/50 align-middle">
+                            <div className="flex flex-col items-center justify-center h-full">
+                              <span className="text-[9px] text-blue-500 uppercase tracking-tighter font-black">মোট আয়</span>
+                              <div className="text-[18px] font-black">
+                                {toBengaliNumber(stTotals?.grand_total || 0)}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Remove Button */}
+                          <td className="border border-gray-400 text-center no-print p-0.5 align-middle">
+                            <button 
+                              onClick={() => handleRemoveStudent(student.id)} 
+                              className="w-full h-full text-red-300 hover:text-red-600 font-bold transition-all text-xl active:scale-125"
+                            >
+                              ✕
+                            </button>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#1e3a5f] text-white font-bold text-[10px] md:text-[12px]">
-                      <td colSpan={3} className="border border-white/20 p-2 text-right">সর্বমোট (Grand Total)</td>
-                      <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.admission_fee)}</td>
+                    <tr className="bg-slate-900 text-white font-black text-[10px] md:text-[12px]">
+                      <td colSpan={3} className="border border-gray-600 p-3 text-right uppercase tracking-wider">সর্বমোট (Grand Total)</td>
                       {MONTHS.map(m => (
-                        <React.Fragment key={m}>
-                          <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].salary)}</td>
-                          {SPECIAL_MONTHS.includes(m) && (
-                            <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].exam)}</td>
-                          )}
-                          <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].backdue)}</td>
-                        </React.Fragment>
+                        <td key={m} className={clsx(
+                          "border border-gray-600 text-center p-1",
+                          (m === 'November' || m === 'December') ? "border-r-[3px] border-black" : ""
+                        )}>
+                          <div className="flex flex-col text-[9px]">
+                            <span title="বেতন">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].salary)}</span>
+                            {SPECIAL_MONTHS.includes(m) && <span className="text-red-300" title="পরীক্ষা">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].exam)}</span>}
+                            <span className="text-orange-300" title="বকেয়া">{toBengaliNumber(totals.columnTotals.months[m.toLowerCase()].backdue)}</span>
+                          </div>
+                        </td>
                       ))}
-                      <td className="border border-white/20 text-center px-1">{toBengaliNumber(totals.columnTotals.miscellaneous)}</td>
-                      <td className="border border-white/20 text-center bg-[#162a45] px-1">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
+                      <td className="border border-gray-600 text-center">{toBengaliNumber(totals.columnTotals.miscellaneous)}</td>
+                      <td className="border border-gray-600 text-center bg-blue-900">{toBengaliNumber(totals.columnTotals.grand_total)}</td>
+                      <td className="border border-gray-600 no-print"></td>
                     </tr>
                   </tfoot>
                 </table>
