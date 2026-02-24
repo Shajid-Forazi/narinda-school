@@ -85,7 +85,7 @@ export default function ResultCardPrint({ student, allMarks, examType, session, 
   return (
     <div className="bg-white p-0 font-serif text-[#1d2327]">
       {/* FRONT COVER */}
-      <div className="min-h-[1123px] w-[794px] mx-auto border-[12px] border-double border-blue-900 p-8 flex flex-col items-center relative page-break-after-always">
+      <div className="min-h-[1123px] w-[794px] print:w-full print:min-h-0 mx-auto border-[12px] border-double border-blue-900 p-8 flex flex-col items-center relative page-break-after-always">
         <div className="italic text-sm mb-4">Bismillahir Rahmanir Rahim</div>
         
         <div className="w-24 h-24 mb-4 border border-slate-200 flex items-center justify-center relative overflow-hidden group cursor-pointer">
@@ -166,7 +166,7 @@ export default function ResultCardPrint({ student, allMarks, examType, session, 
       </div>
 
       {/* BACK COVER */}
-      <div className="min-h-[1123px] w-[794px] mx-auto border-[12px] border-double border-blue-900 p-12 flex flex-col page-break-after-always">
+      <div className="min-h-[1123px] w-[794px] print:w-full print:min-h-0 mx-auto border-[12px] border-double border-blue-900 p-12 flex flex-col page-break-after-always">
         <div className="flex-1">
           <div className="flex justify-center mb-12">
             <div className="border-2 border-blue-900 rounded-full px-8 py-2 text-xl font-bold">
@@ -201,7 +201,7 @@ export default function ResultCardPrint({ student, allMarks, examType, session, 
       </div>
 
       {/* INNER MARK SHEET */}
-      <div className="min-h-[1123px] w-[794px] mx-auto p-4 flex flex-col page-break-before">
+      <div className="min-h-[1123px] w-[794px] print:w-full print:min-h-0 mx-auto p-4 flex flex-col page-break-before">
         <div className="flex justify-between items-center mb-2 px-4">
           <div className="flex items-center gap-2">
             {schoolLogoUrl && <img src={schoolLogoUrl} alt="Logo" className="w-8 h-8" />}
