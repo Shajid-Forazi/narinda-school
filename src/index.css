@@ -57,6 +57,7 @@
 }
 
 @layer utilities {
+  @media print {
     .print\:hidden {
       display: none !important;
     }
@@ -80,7 +81,7 @@
       height: 297mm; /* A4 height */
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-      overflow: hidden;
+      overflow: visible;
     }
     @page {
       size: A4 landscape;
@@ -116,27 +117,28 @@
       background-color: white !important;
     }
     .text-green-600 {
-      color: #22c55e !important; /* Tailwind green-600 */
+      color: #22c55e !important;
     }
     .text-red-600 {
-      color: #ef4444 !important; /* Tailwind red-600 */
+      color: #ef4444 !important;
     }
     .text-slate-400 {
-      color: #94a3b8 !important; /* Tailwind slate-400 */
+      color: #94a3b8 !important;
     }
     .text-slate-500 {
-      color: #64748b !important; /* Tailwind slate-500 */
+      color: #64748b !important;
     }
     .text-slate-700 {
-      color: #334155 !important; /* Tailwind slate-700 */
+      color: #334155 !important;
     }
     .text-slate-800 {
-      color: #1e293b !important; /* Tailwind slate-800 */
+      color: #1e293b !important;
     }
     .text-\[\#1d2327\] {
       color: #1d2327 !important;
     }
   }
+}
 
 .wp-card {
   @apply bg-white border border-[#c3c4c7] shadow-sm;

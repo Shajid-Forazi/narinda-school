@@ -13,6 +13,13 @@ const BENGALI_MONTHS_SHORT = [
 const SPECIAL_MONTHS = ['April', 'August', 'December'];
 const STUDENTS_PER_CARD = 10;
 
+const sumNumbers = (val: string): number => {
+  if (!val) return 0;
+  const numbers = val.match(/[-+]?\d*\.?\d+/g);
+  if (!numbers) return 0;
+  return numbers.reduce((acc, n) => acc + (parseFloat(n) || 0), 0);
+};
+
 export default function Ledger() {
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -70,7 +77,7 @@ export default function Ledger() {
   const handleInlineSave = async () => {
     if (!editingCell) return;
     
-    const newValue = parseFloat(inlineEditValue) || 0;
+    const newValue = sumNumbers(inlineEditValue);
     const { studentId, month, field } = editingCell;
     
     // Find existing payment for this student/month/year
@@ -271,19 +278,19 @@ export default function Ledger() {
         }}
       >
         {label && <span className="text-[8px] px-1 font-black bg-gray-100/50 text-gray-500 uppercase">{label}</span>}
-        <div className="flex-1 flex items-center justify-center relative">
+        <div className="flex-1 flex items-center justify-center relative p-1">
           {isEditing ? (
-            <input
-              ref={editInputRef}
-              type="number"
+            <textarea
+              ref={editInputRef as any}
               value={inlineEditValue}
               onChange={e => setInlineEditValue(e.target.value)}
               onBlur={handleInlineSave}
-              onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); }}
-              className="w-full h-full text-center bg-white outline-none border-2 border-blue-500 rounded-sm text-[12px] font-black"
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInlineSave(); } }}
+              className="w-full min-h-[30px] text-center bg-white outline-none border-2 border-blue-500 rounded-sm text-[10px] md:text-[12px] font-black resize-none overflow-hidden"
+              rows={1}
             />
           ) : (
-            <span className={clsx("text-[12px] font-black", value > 0 ? colorClass : "text-slate-300")}>
+            <span className={clsx("text-[10px] md:text-[12px] font-black break-all text-center", value > 0 ? colorClass : "text-slate-300")}>
               {value > 0 ? toBengaliNumber(value) : '০'}
             </span>
           )}
@@ -402,7 +409,7 @@ export default function Ledger() {
 
                           {/* Admission & Arrears */}
                           <td className="border border-gray-400 p-0 align-top">
-                            <div className="flex flex-col h-full divide-y divide-gray-400 min-h-[120px]">
+                            <div className="flex flex-col h-full divide-y divide-gray-400 min-h-[100px] md:min-h-[120px]">
                               <div className="flex-[1.5] flex flex-col">
                                 {renderCell(student.id, MONTHS[0], 'admission_fee', stTotals?.admission_fee || 0, "ভর্তি")}
                               </div>
@@ -413,7 +420,7 @@ export default function Ledger() {
                                 <div className="flex-1 flex flex-col bg-green-50/30">
                                   <div className="flex-1 flex flex-col">
                                     <span className="text-[8px] px-1 font-black bg-gray-100/50 text-gray-500 uppercase">জমা</span>
-                                    <div className="flex-1 flex items-center justify-center text-[12px] font-black text-green-700 p-1">
+                                    <div className="flex-1 flex items-center justify-center text-[11px] md:text-[12px] font-black text-green-700 p-1">
                                       {toBengaliNumber(stTotals?.grand_total || 0)}
                                     </div>
                                   </div>
@@ -431,7 +438,7 @@ export default function Ledger() {
                                 "border border-gray-400 p-0 align-top h-full",
                                 isLastTwo ? "border-r-[3px] border-black" : ""
                               )}>
-                                <div className="flex flex-col h-full divide-y divide-gray-300 min-h-[120px]">
+                                <div className="flex flex-col h-full divide-y divide-gray-300 min-h-[100px] md:min-h-[120px]">
                                   {renderCell(student.id, m, 'salary', stTotals?.monthly_salary[m.toLowerCase()] || 0, "বেতন", "text-blue-900")}
                                   {isSpecial && renderCell(student.id, m, 'exam_fee', stTotals?.monthly_exam[m.toLowerCase()] || 0, "পরীক্ষা", "text-red-800")}
                                   {renderCell(student.id, m, 'backdue', stTotals?.monthly_backdue[m.toLowerCase()] || 0, "বকেয়া", "text-orange-700")}
@@ -442,7 +449,7 @@ export default function Ledger() {
 
                           {/* Others */}
                           <td className="border border-gray-400 p-0 align-top">
-                            <div className="flex flex-col h-full min-h-[120px]">
+                            <div className="flex flex-col h-full min-h-[100px] md:min-h-[120px]">
                               {renderCell(student.id, MONTHS[0], 'miscellaneous', stTotals?.miscellaneous || 0, "অন্যান্য", "text-gray-800")}
                             </div>
                           </td>

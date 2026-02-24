@@ -126,7 +126,51 @@ export default function StudentList({ onEdit }: Props) {
 
       {/* Student Table */}
       <div className="wp-card rounded overflow-hidden">
-        <div className="overflow-x-auto w-full">
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-[#c3c4c7]">
+          {loading ? (
+            <div className="p-8 text-center text-slate-400">লোড হচ্ছে...</div>
+          ) : students.length === 0 ? (
+            <div className="p-8 text-center text-slate-400">কোনো শিক্ষার্থী পাওয়া যায়নি।</div>
+          ) : (
+            students.map((student) => (
+              <div key={student.id} className="p-4 space-y-3 bg-white">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-slate-100 rounded border border-[#c3c4c7] overflow-hidden shrink-0">
+                    {student.photo_url ? (
+                      <img src={student.photo_url} alt={student.name_bengali} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <User size={24} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-[#1e40af] truncate">{student.name_bengali}</div>
+                    <div className="text-[10px] text-slate-400 uppercase truncate">{student.name_english}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-slate-500">রোল: {toBengaliNumber(student.sl_no)}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-slate-400">শ্রেণী:</span> {student.class}</div>
+                  <div><span className="text-slate-400">শাখা:</span> {student.section}</div>
+                  <div><span className="text-slate-400">শিফট:</span> {student.shift}</div>
+                  <div><span className="text-slate-400">ফোন:</span> {toBengaliNumber(student.present_phone)}</div>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button onClick={() => handleViewProfile(student.id)} className="text-slate-500 flex items-center gap-1 text-[10px] font-bold uppercase"><Eye size={14} /> View</button>
+                  <button onClick={() => handleEditClick(student.id)} className="text-blue-600 flex items-center gap-1 text-[10px] font-bold uppercase"><Edit2 size={14} /> Edit</button>
+                  <button onClick={() => handleDelete(student.id)} className="text-red-500 flex items-center gap-1 text-[10px] font-bold uppercase"><Trash2 size={14} /> Delete</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className="min-w-max w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#f6f7f7] border-b border-[#c3c4c7]">
@@ -143,11 +187,11 @@ export default function StudentList({ onEdit }: Props) {
             <tbody className="divide-y divide-[#c3c4c7]">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-400">লোড হচ্ছে...</td>
+                  <td colSpan={8} className="p-8 text-center text-slate-400">লোড হচ্ছে...</td>
                 </tr>
               ) : students.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-400">কোনো শিক্ষার্থী পাওয়া যায়নি।</td>
+                  <td colSpan={8} className="p-8 text-center text-slate-400">কোনো শিক্ষার্থী পাওয়া যায়নি।</td>
                 </tr>
               ) : (
                 students.map((student, index) => (

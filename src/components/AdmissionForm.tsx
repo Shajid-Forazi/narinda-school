@@ -201,12 +201,13 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Form Container */}
-      <div 
-        ref={formRef}
-        className="w-[210mm] min-h-[297mm] bg-[#fffdf0] p-[10mm] border border-black shadow-lg print:shadow-none print:m-0 print:border-none"
-      >
+    <div className="w-full flex flex-col items-center py-4 md:py-8">
+      <div className="w-full max-w-full overflow-x-auto flex justify-center pb-12 px-4 scrollbar-thin scrollbar-thumb-slate-300">
+        {/* Form Container */}
+        <div 
+          ref={formRef}
+          className="w-[210mm] min-h-[297mm] bg-[#fffdf0] p-[5mm] md:p-[10mm] border border-black shadow-2xl print:shadow-none print:m-0 print:border-none shrink-0"
+        >
         {/* Header */}
         <div className="flex justify-between items-start mb-6 border-b-2 border-red-600 pb-4">
           <div className="w-20 h-20 bg-slate-100 border border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer">
@@ -524,7 +525,7 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
       </div>
 
       {/* Buttons */}
-      <div className="flex gap-4 print:hidden mb-12">
+      <div className="flex flex-wrap justify-center gap-4 print:hidden mb-12">
         <button 
           onClick={handleReset}
           className="wp-button bg-white text-slate-700 border border-[#c3c4c7] hover:bg-slate-50 flex items-center gap-2"
@@ -547,5 +548,6 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
         </button>
       </div>
     </div>
+  </div>
   );
 }
