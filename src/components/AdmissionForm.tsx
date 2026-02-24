@@ -201,11 +201,11 @@ export default function AdmissionForm({ onComplete, studentToEdit }: Props) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full overflow-x-auto pb-8">
+    <div className="flex flex-col items-center gap-6">
       {/* Form Container */}
       <div 
         ref={formRef}
-        className="w-[210mm] min-h-[297mm] bg-[#fffdf0] p-[5mm] md:p-[10mm] border border-black shadow-lg print:shadow-none print:m-0 print:border-none shrink-0"
+        className="w-[210mm] min-h-[297mm] bg-[#fffdf0] p-[10mm] border border-black shadow-lg print:shadow-none print:m-0 print:border-none"
       >
         {/* Header */}
         <div className="flex justify-between items-start mb-6 border-b-2 border-red-600 pb-4">
