@@ -10,12 +10,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Narinda Ideal School Management',
         short_name: 'Narinda School',
         description: 'School Management System for Narinda Ideal School',
-        theme_color: '#1e40af',
+        theme_color: '#1e3a5f',
         icons: [
           {
             src: 'icons/icon-192x192.png',
@@ -40,7 +39,6 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'dist',
-    assetsDir: '.',
     emptyOutDir: true,
   }
 });
